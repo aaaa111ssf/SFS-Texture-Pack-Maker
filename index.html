@@ -1,65 +1,65 @@
-<!DOCTYPE html>   < !DOCTYPE html>   < !DOCTYPE html>
-<html lang="zh-CN">   < css长= " zh-CN" >
-<head>   < head>
-    <meta charset="UTF-8">   <meta   元 charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SFS 涂装包制作器</title>< title> SFS Paint Package Maker /title>
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link   链接 rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png"><link   链接 rel="icon"   "icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="icon" type="image/x-icon" href="favicon.ico"><link rel="icon" type="image/x-icon" href="favicon.ico">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script   脚本 src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js></script   脚本>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js></script>
-    <style>   < style>
-        :root {   :根{
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFS 涂装包制作器</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
             --bg: #0a0a0a;
-            --bg-card: #141414;   ——bg-card: # 141414;
+            --bg-card: #141414;
             --bg-hover: #1f1f1f;
             --bg-input: #0e0e0e;
-            --text: #e8e8e8;   …文字:# e8e8e8;
-            --text-muted: #777;   ——text-muted: # 777;
-            --text-dim: #444;   ——text-dim: # 444;
+            --text: #e8e8e8;
+            --text-muted: #777;
+            --text-dim: #444;
             --accent: #fff;
             --accent-hover: #ccc;
-            --danger: #b33;   ——危险:# b33;
-            --success: #3a3;   ——成功:# 3 a3;
-            --warning: #aa8800;   ——警告:# aa8800;
-            --border: #2a2a2a;   …边境:# 2a2a2a;
+            --danger: #b33;
+            --success: #3a3;
+            --warning: #aa8800;
+            --border: #2a2a2a;
             --border-light: #333;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }* { margin: 0; padding: 0; box-sizing: border-box; }}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {   身体{
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;字体族：'Segoe UI'，system-ui，-apple-system，sans-serif；
-            background: var(--bg);   背景：var(--bg)；
-            color: var(--text);   颜色:var(文本);
-            min-height: 100vh;   最小高度:100 vh;
-            line-height: 1.6;   行高:1.6;
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
         }
 
-        .container {   ．容器{
+        .container {
             max-width: 1200px;
-            margin: 0 auto;   Margin: 0 auto；
-            padding   填充: 20px;   填充:20 px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        header {   标题{
-            text-align: center;   text-align:中心;
+        header {
+            text-align: center;
             padding: 48px 20px 36px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 30px;
         }
 
-        header h1 {   Header h1 {
-            font-size: 2.2rem;   字体大小:2.2快速眼动;
-            font-weight: 700;   粗细:700;
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
             color: #fff;
             letter-spacing: -0.5px;
             margin-bottom: 8px;
         }
 
         header p {
-            color: var(--text-muted);   颜色：var(--text-muted)；
+            color: var(--text-muted);
             font-size: 1rem;
         }
 
@@ -68,21 +68,21 @@
             border-radius: 10px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid var(--border);边框：1px 实线 var(--border)；
+            border: 1px solid var(--border);
         }
 
         .card h2 {
             font-size: 1.15rem;
             font-weight: 600;
             margin-bottom: 20px;
-            display: flex;   显示:flex;
-            align-items: center;   对齐项目:中心;
-            gap: 10px;   差距:10 px;
-            color: #ccc;   颜色:#等;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ccc;
         }
 
-        .card h2 .icon {   2 .卡片图标{
-            font-size: 1.2rem;   字体大小:1.2快速眼动;
+        .card h2 .icon {
+            font-size: 1.2rem;
             opacity: 0.5;
         }
 
@@ -225,7 +225,7 @@
         }
 
         .texture-body {
-            display: flex;   显示:flex;
+            display: flex;
             gap: 16px;
             align-items: flex-start;
             flex-wrap: wrap;
@@ -633,7 +633,7 @@
             <div class="grid-2">
                 <div class="form-group">
                     <label>显示名称 *</label>
-                    <input type="text" id="packName" placeholder="例如：中国航天贴图包" value="我的涂装包">
+                    <input type="text" id="packName" placeholder="例如：中国航天贴图包" value="贴图包">
                 </div>
                 <div class="form-group">
                     <label>版本</label>
@@ -698,7 +698,7 @@
 
         <!-- 操作按钮 -->
         <div style="text-align: center; margin: 40px 0;">
-            <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()"><button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()">
+            <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()">
                 下载涂装包 (ZIP)
             </button>
         </div>
