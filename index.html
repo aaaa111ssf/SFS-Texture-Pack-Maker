@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFS 涂装包制作器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --bg-hover: #1f1f1f;
+            --bg-input: #0e0e0e;
+            --text: #e8e8e8;
+            --text-muted: #777;
+            --text-dim: #444;
+            --accent: #fff;
+            --accent-hover: #ccc;
+            --danger: #b33;
+            --success: #3a3;
+            --warning: #aa8800;
+            --border: #2a2a2a;
+            --border-light: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 48px 20px 36px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ccc;
+        }
+
+        .card h2 .icon {
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--border-light);
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 36px 20px;
+            background: var(--bg-input);
+            border: 1px dashed var(--border-light);
+            border-radius: 6px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .file-input-wrapper:hover .file-input-label {
+            border-color: #555;
+            color: var(--text);
+        }
+
+        .file-input-label.has-file {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .file-input-label.error {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn {
+            padding: 9px 18px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .btn:hover { background: #2a2a2a; }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover { background: #ddd; border-color: #ddd; }
+
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        .btn-success {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            font-weight: 600;
+        }
+        .btn-success:hover { background: #ddd; }
+
+        .btn-secondary { background: var(--bg-hover); color: var(--text-muted); }
+        .btn-secondary:hover { background: #2a2a2a; color: var(--text); }
+
+        .texture-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .texture-item:hover { border-color: var(--border-light); }
+
+        .texture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .texture-name { font-weight: 600; font-size: 1.05rem; color: #eee; }
+
+        .texture-meta {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            margin-top: 4px;
+        }
+
+        .texture-body {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .texture-preview-img {
+            width: 160px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: #050505;
+        }
+
+        .texture-size-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .preview-section {
+            background: var(--bg-input);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.82rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+
+        .tree-file { color: #999; }
+        .tree-folder { color: #ddd; font-weight: 600; }
+
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 20px 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            user-select: none;
+            font-size: 0.9rem;
+            padding: 10px 0;
+        }
+
+        .advanced-toggle input {
+            width: 16px; height: 16px;
+            accent-color: #fff;
+        }
+
+        .advanced-section {
+            display: none;
+            padding: 16px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .advanced-section.visible { display: block; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .tag {
+            background: #333;
+            color: #ccc;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag button {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .tag button:hover { color: #fff; }
+
+        .tag-input input {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .tag-input input:focus { outline: none; }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: #111;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 28px;
+            max-width: 640px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #ddd;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.9rem;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            background: #333;
+            border: 1px solid var(--border-light);
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast.info { border-color: #555; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stats {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .help-text {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .shadow-shape-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border);
+        }
+
+        .icon-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            object-fit: cover;
+            margin-top: 8px;
+            background: #050505;
+        }
+
+        /* 尺寸调节区域 */
+        .resize-section {
+            margin-top: 14px;
+            padding: 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .resize-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .resize-row label {
+            min-width: 50px;
+            margin-bottom: 0;
+            font-size: 0.85rem;
+        }
+
+        .resize-row input[type="number"] {
+            width: 100px;
+            padding: 6px 10px;
+            font-size: 0.88rem;
+        }
+
+        .resize-row .dim-sep {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .resize-hint {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* 预设尺寸区域 */
+        .preset-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+
+        .preset-section .section-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .preset-group-label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin: 8px 0 6px;
+        }
+
+        .preset-group-label:first-of-type { margin-top: 0; }
+
+        .preset-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .preset-chip {
+            padding: 4px 10px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .preset-chip:hover {
+            border-color: #555;
+            color: var(--text);
+        }
+
+        .preset-chip .preset-dim {
+            color: var(--text-dim);
+            margin-left: 4px;
+            font-size: 0.72rem;
+        }
+
+        /* 透明底 */
+        .transparent-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .transparent-section label {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .transparent-section input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #fff;
+        }
+
+        .transparent-section input[type="range"] {
+            width: 120px;
+            accent-color: #fff;
+        }
+
+        .tolerance-val {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            min-width: 30px;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .link-btn:hover { color: var(--text); }
+
+        /* 预览画布区域 */
+        .preview-canvas-area {
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .preview-canvas-area canvas {
+            max-width: 100%;
+            max-height: 260px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 16px 16px;
+        }
+
+        .preview-canvas-area .canvas-info {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
+
+        .original-dim {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            header h1 { font-size: 1.6rem; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .texture-body { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SFS Texture Pack Maker</h1>
+        <p style="font-size:0.82rem; color:var(--text-dim); margin:4px 0 6px;">by A Future Star</p>
+        <p>Spaceflight Simulator 涂装包可视化制作工具</p>
+    </header>
+
+    <div class="container">
+        <!-- 包信息 -->
+        <div class="card">
+            <h2><span class="icon">[</span> 包信息</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>显示名称 *</label>
+                    <input type="text" id="packName" placeholder="例如：人民的名义贴图包" value="我的涂装包">
+                </div>
+                <div class="form-group">
+                    <label>版本</label>
+                    <input type="text" id="packVersion" placeholder="例如：1.0.0" value="1.0.0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="packDesc" placeholder="描述你的涂装包..."></textarea>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>作者</label>
+                    <input type="text" id="packAuthor" placeholder="作者名称">
+                </div>
+                <div class="form-group">
+                    <label>包图标 (仅限 PNG，可选)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="packIcon" accept=".png">
+                        <div class="file-input-label" id="packIconLabel">
+                            点击或拖拽上传图标 (PNG)
+                        </div>
+                    </div>
+                    <img id="packIconPreview" class="icon-preview" style="display:none">
+                </div>
+            </div>
+        </div>
+
+        <!-- 高级选项开关 -->
+        <div class="advanced-toggle" onclick="document.getElementById('advancedOptions').classList.toggle('visible');">
+            <input type="checkbox" id="advancedCheck" onchange="event.stopPropagation()">
+            <span>显示高级选项 (Shadow / Shape Textures)</span>
+        </div>
+
+        <!-- 涂装列表 -->
+        <div class="card">
+            <div class="toolbar">
+                <h2><span class="icon">[</span> 涂装列表</h2>
+                <div class="stats">
+                    <span id="textureCount">0 个涂装</span>
+                </div>
+            </div>
+
+            <div id="textureList">
+                <div class="empty-state">
+                    <p>还没有添加涂装，点击下方按钮添加</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="openTextureModal()">
+                    + 添加涂装
+                </button>
+            </div>
+        </div>
+
+        <!-- 预览 -->
+        <div class="card">
+            <h2><span class="icon">[</span> 文件结构预览</h2>
+            <div class="preview-section" id="filePreview"></div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="text-align: center; margin: 40px 0;">
+            <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()">
+                下载涂装包 (ZIP)
+            </button>
+        </div>
+    </div>
+
+    <!-- 添加/编辑涂装模态框 -->
+    <div class="modal-overlay" id="textureModal">
+        <div class="modal">
+            <h3 id="modalTitle">添加涂装</h3>
+            <input type="hidden" id="editingIndex" value="-1">
+
+            <div class="form-group">
+                <label>涂装名称 *</label>
+                <input type="text" id="texName" placeholder="例如：CN, FG, RS-25">
+                <div class="help-text">此名称将作为配置文件的文件名</div>
+            </div>
+
+            <div class="form-group">
+                <label>显示名称 (可选，留空自动生成)</label>
+                <input type="text" id="texDisplayName" placeholder="游戏中显示的涂装名称">
+            </div>
+
+            <div class="form-group">
+                <label>Color Texture 图片 * <span class="original-dim" id="colorOrigDim"></span></label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="texColorFile" accept=".png" onchange="handleFileSelect(this, 'color')">
+                    <div class="file-input-label" id="texColorLabel">
+                        点击或拖拽上传 PNG 图片 (必须)
+                    </div>
+                </div>
+            </div>
+
+            <!-- 尺寸调节 -->
+            <div class="resize-section" id="resizeSection" style="display:none;">
+                <div class="resize-row">
+                    <label>宽度</label>
+                    <input type="number" id="resizeW" min="1" max="8192" placeholder="宽" oninput="onResizeInput('w')">
+                    <span class="dim-sep">x</span>
+                    <label>高度</label>
+                    <input type="number" id="resizeH" min="1" max="8192" placeholder="高" oninput="onResizeInput('h')">
+                    <button class="link-btn" id="lockRatioBtn" onclick="toggleLockRatio()" title="锁定/解锁宽高比">&#128274; 锁定比例</button>
+                </div>
+                <div class="resize-row">
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="resetSize()">重置为原始尺寸</button>
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="doubleSize()">x2</button>
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="halfSize()">x0.5</button>
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="powerOf2Size()">2 的幂</button>
+                </div>
+                <div class="resize-hint">留空或填 0 则不调整尺寸，直接使用原图</div>
+
+                <!-- 预设尺寸 -->
+                <div class="preset-section">
+                    <div class="section-label">预设尺寸 (点击应用)</div>
+                    <div class="preset-group-label">旗帜 / 标志</div>
+                    <div class="preset-chips">
+                        <span class="preset-chip" onclick="applyPreset(1920,1080)">16:9<span class="preset-dim">1920x1080</span></span>
+                        <span class="preset-chip" onclick="applyPreset(1280,720)">720p<span class="preset-dim">1280x720</span></span>
+                        <span class="preset-chip" onclick="applyPreset(3,2)">3:2 国旗通用<span class="preset-dim">按比例</span></span>
+                        <span class="preset-chip" onclick="applyPreset(2,1)">2:1 宽幅<span class="preset-dim">按比例</span></span>
+                        <span class="preset-chip" onclick="applyPreset(900,600)">SFS 常用<span class="preset-dim">900x600</span></span>
+                    </div>
+                    <div class="preset-group-label">方形 / 图标</div>
+                    <div class="preset-chips">
+                        <span class="preset-chip" onclick="applyPreset(512,512)">512x512</span>
+                        <span class="preset-chip" onclick="applyPreset(256,256)">256x256</span>
+                        <span class="preset-chip" onclick="applyPreset(128,128)">128x128</span>
+                        <span class="preset-chip" onclick="applyPreset(64,64)">64x64</span>
+                    </div>
+                    <div class="preset-group-label">SFS 贴图 (2 的幂)</div>
+                    <div class="preset-chips">
+                        <span class="preset-chip" onclick="applyPreset(2048,2048)">2048x2048</span>
+                        <span class="preset-chip" onclick="applyPreset(2048,1024)">2048x1024</span>
+                        <span class="preset-chip" onclick="applyPreset(1024,1024)">1024x1024</span>
+                        <span class="preset-chip" onclick="applyPreset(1024,512)">1024x512</span>
+                        <span class="preset-chip" onclick="applyPreset(512,512)">512x512</span>
+                        <span class="preset-chip" onclick="applyPreset(512,256)">512x256</span>
+                        <span class="preset-chip" onclick="applyPreset(256,128)">256x128</span>
+                    </div>
+                    <div class="preset-group-label">SFS 部件推荐</div>
+                    <div class="preset-chips">
+                        <span class="preset-chip" onclick="applyPreset(64,512)">机身<span class="preset-dim">64x512</span></span>
+                        <span class="preset-chip" onclick="applyPreset(128,1024)">火箭体<span class="preset-dim">128x1024</span></span>
+                        <span class="preset-chip" onclick="applyPreset(256,256)">整流罩<span class="preset-dim">256x256</span></span>
+                        <span class="preset-chip" onclick="applyPreset(128,128)">引擎<span class="preset-dim">128x128</span></span>
+                        <span class="preset-chip" onclick="applyPreset(64,128)">小部件<span class="preset-dim">64x128</span></span>
+                    </div>
+                </div>
+
+                <!-- 一键透明底 -->
+                <div class="transparent-section">
+                    <label><input type="checkbox" id="transparentBg" onchange="renderPreview()"> 去除白色背景</label>
+                    <label style="font-size:0.78rem; color:var(--text-dim);">容差</label>
+                    <input type="range" id="transparentTolerance" min="1" max="100" value="30" oninput="document.getElementById('toleranceVal').textContent=this.value; renderPreview();">
+                    <span class="tolerance-val" id="toleranceVal">30</span>
+                </div>
+            </div>
+
+            <!-- 实时预览画布 -->
+            <div class="preview-canvas-area" id="previewArea" style="display:none;">
+                <canvas id="previewCanvas"></canvas>
+                <div class="canvas-info" id="canvasInfo"></div>
+            </div>
+
+            <div id="advancedOptions" class="advanced-section">
+                <h4 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem;">高级选项</h4>
+
+                <div class="form-group">
+                    <label>标签 (Tags)</label>
+                    <div class="tag-input" id="tagInput">
+                        <span class="tag">tank <button onclick="removeTag(this)">&times;</button></span>
+                        <span class="tag">cone <button onclick="removeTag(this)">&times;</button></span>
+                        <span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span>
+                        <input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">
+                    </div>
+                </div>
+
+                <div class="shadow-shape-section">
+                    <div class="form-group">
+                        <label>Shadow Texture 图片 (可选)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="texShadowFile" accept=".png" onchange="handleFileSelect(this, 'shadow')">
+                            <div class="file-input-label" id="texShadowLabel">
+                                上传 Shadow PNG (可选)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Shape Texture 图片 (可选)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="texShapeFile" accept=".png" onchange="handleFileSelect(this, 'shape')">
+                            <div class="file-input-label" id="texShapeLabel">
+                                上传 Shape PNG (可选)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeTextureModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTexture()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let textures = [];
+        let packIconFile = null;
+        let tempFiles = { color: null, shadow: null, shape: null };
+
+        // 尺寸相关状态
+        let originalImage = null;       // 原始 Image 对象
+        let originalW = 0, originalH = 0;
+        let aspectRatio = 1;
+        let lockRatio = true;
+        let resizeTimer = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePreview();
+            updateTextureList();
+
+            document.getElementById('packIcon').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith('.png')) {
+                    showToast('图标格式必须是 PNG！', 'error');
+                    e.target.value = '';
+                    const lbl = document.getElementById('packIconLabel');
+                    lbl.textContent = '仅支持 PNG 格式';
+                    lbl.classList.add('error');
+                    setTimeout(() => { lbl.classList.remove('error'); lbl.textContent = '点击或拖拽上传图标 (PNG)'; }, 2500);
+                    return;
+                }
+                packIconFile = file;
+                const lbl = document.getElementById('packIconLabel');
+                lbl.textContent = file.name + ' (' + formatBytes(file.size) + ')';
+                lbl.classList.add('has-file');
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById('packIconPreview').src = ev.target.result;
+                    document.getElementById('packIconPreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // ========== 预设尺寸 ==========
+        function applyPreset(w, h) {
+            if (!originalImage) {
+                showToast('请先上传图片', 'error');
+                return;
+            }
+            // 如果 w 和 h 都小于 100，视为比例模式
+            if (w <= 100 && h <= 100 && (w / h) !== 1) {
+                // 比例模式：基于原始高度，按比例计算宽度，取 2 的幂
+                const ratio = w / h;
+                const targetH = nearestPow2(originalH);
+                const targetW = Math.max(1, Math.round(targetH * ratio));
+                document.getElementById('resizeW').value = targetW;
+                document.getElementById('resizeH').value = targetH;
+                // 比例模式解锁锁定
+                lockRatio = false;
+                document.getElementById('lockRatioBtn').innerHTML = '&#128275; 解锁比例';
+            } else {
+                document.getElementById('resizeW').value = w;
+                document.getElementById('resizeH').value = h;
+            }
+            renderPreview();
+        }
+
+        function nearestPow2(n) {
+            // 就近取 2 的幂
+            const p = Math.pow(2, Math.round(Math.log2(Math.max(1, n))));
+            return Math.max(2, Math.min(4096, p));
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function openTextureModal(index = -1) {
+            document.getElementById('textureModal').classList.add('visible');
+            document.getElementById('editingIndex').value = index;
+            document.getElementById('modalTitle').textContent = index === -1 ? '添加涂装' : '编辑涂装';
+
+            // 重置预览
+            hidePreview();
+
+            if (index !== -1) {
+                const tex = textures[index];
+                document.getElementById('texName').value = tex.name;
+                document.getElementById('texDisplayName').value = (tex.displayName && tex.displayName !== tex.name + ' unhidden') ? tex.displayName : '';
+
+                const tagContainer = document.getElementById('tagInput');
+                tagContainer.innerHTML = '';
+                (tex.tags || ['tank', 'cone', 'fairing']).forEach(tag => {
+                    tagContainer.innerHTML += `<span class="tag">${tag} <button onclick="removeTag(this)">&times;</button></span>`;
+                });
+                tagContainer.innerHTML += '<input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
+
+                if (tex.colorFile) {
+                    document.getElementById('texColorLabel').textContent = tex.colorFile.name + ' (' + formatBytes(tex.colorFile.size) + ')';
+                    document.getElementById('texColorLabel').classList.add('has-file');
+                    loadImageForPreview(tex.colorFile, tex.resizeW || 0, tex.resizeH || 0);
+                }
+
+                if (tex.shadowFile) {
+                    document.getElementById('texShadowLabel').textContent = tex.shadowFile.name;
+                    document.getElementById('texShadowLabel').classList.add('has-file');
+                } else {
+                    document.getElementById('texShadowLabel').textContent = '上传 Shadow PNG (可选)';
+                    document.getElementById('texShadowLabel').classList.remove('has-file');
+                }
+
+                if (tex.shapeFile) {
+                    document.getElementById('texShapeLabel').textContent = tex.shapeFile.name;
+                    document.getElementById('texShapeLabel').classList.add('has-file');
+                } else {
+                    document.getElementById('texShapeLabel').textContent = '上传 Shape PNG (可选)';
+                    document.getElementById('texShapeLabel').classList.remove('has-file');
+                }
+
+                tempFiles = { color: tex.colorFile, shadow: tex.shadowFile, shape: tex.shapeFile };
+
+                // 恢复透明底设置
+                document.getElementById('transparentBg').checked = !!tex.transparentBg;
+                document.getElementById('transparentTolerance').value = tex.transparentTolerance || 30;
+                document.getElementById('toleranceVal').textContent = tex.transparentTolerance || 30;
+            } else {
+                document.getElementById('texName').value = '';
+                document.getElementById('texDisplayName').value = '';
+                document.getElementById('texColorLabel').textContent = '点击或拖拽上传 PNG 图片 (必须)';
+                document.getElementById('texColorLabel').classList.remove('has-file');
+                document.getElementById('texShadowLabel').textContent = '上传 Shadow PNG (可选)';
+                document.getElementById('texShadowLabel').classList.remove('has-file');
+                document.getElementById('texShapeLabel').textContent = '上传 Shape PNG (可选)';
+                document.getElementById('texShapeLabel').classList.remove('has-file');
+
+                const tagContainer = document.getElementById('tagInput');
+                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
+
+                tempFiles = { color: null, shadow: null, shape: null };
+            }
+        }
+
+        function closeTextureModal() {
+            document.getElementById('textureModal').classList.remove('visible');
+        }
+
+        // 点击遮罩层空白区域关闭模态框
+        document.getElementById('textureModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTextureModal();
+        });
+
+        function hidePreview() {
+            document.getElementById('resizeSection').style.display = 'none';
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('colorOrigDim').textContent = '';
+            document.getElementById('resizeW').value = '';
+            document.getElementById('resizeH').value = '';
+            document.getElementById('transparentBg').checked = false;
+            document.getElementById('transparentTolerance').value = 30;
+            document.getElementById('toleranceVal').textContent = '30';
+            originalImage = null;
+        }
+
+        function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.png')) {
+                showToast('图片格式必须是 PNG！', 'error');
+                input.value = '';
+                return;
+            }
+            tempFiles[type] = file;
+            const labelMap = { color: 'texColorLabel', shadow: 'texShadowLabel', shape: 'texShapeLabel' };
+            const lbl = document.getElementById(labelMap[type]);
+            lbl.textContent = file.name + ' (' + formatBytes(file.size) + ')';
+            lbl.classList.add('has-file');
+
+            if (type === 'color') {
+                loadImageForPreview(file, 0, 0);
+            }
+        }
+
+        function loadImageForPreview(file, presetW, presetH) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    originalW = img.naturalWidth;
+                    originalH = img.naturalHeight;
+                    aspectRatio = originalW / originalH;
+
+                    document.getElementById('colorOrigDim').textContent = '原始: ' + originalW + ' x ' + originalH;
+                    document.getElementById('resizeSection').style.display = 'block';
+
+                    if (presetW > 0 && presetH > 0) {
+                        document.getElementById('resizeW').value = presetW;
+                        document.getElementById('resizeH').value = presetH;
+                    } else {
+                        document.getElementById('resizeW').value = '';
+                        document.getElementById('resizeH').value = '';
+                    }
+
+                    renderPreview();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderPreview() {
+            if (!originalImage) return;
+
+            const rw = parseInt(document.getElementById('resizeW').value) || 0;
+            const rh = parseInt(document.getElementById('resizeH').value) || 0;
+            const outW = rw > 0 ? rw : originalW;
+            const outH = rh > 0 ? rh : originalH;
+            const doTransparent = document.getElementById('transparentBg').checked;
+            const tolerance = parseInt(document.getElementById('transparentTolerance').value) || 30;
+
+            const canvas = document.getElementById('previewCanvas');
+            canvas.width = outW;
+            canvas.height = outH;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, outW, outH);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(originalImage, 0, 0, outW, outH);
+
+            // 去除白色背景
+            if (doTransparent) {
+                const imageData = ctx.getImageData(0, 0, outW, outH);
+                const data = imageData.data;
+                const tol = tolerance * 2.55; // 0-255 范围
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
+                        data[i + 3] = 0; // 设为透明
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+            document.getElementById('previewArea').style.display = 'block';
+
+            let info = '输出: ' + outW + ' x ' + outH;
+            if (rw > 0 || rh > 0) {
+                info += ' (已缩放)';
+            } else {
+                info += ' (原始)';
+            }
+            if (doTransparent) info += ' | 透明底已开启';
+            document.getElementById('canvasInfo').textContent = info;
+        }
+
+        function onResizeInput(changed) {
+            if (!lockRatio || !originalImage) {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(renderPreview, 150);
+                return;
+            }
+
+            const wInput = document.getElementById('resizeW');
+            const hInput = document.getElementById('resizeH');
+
+            if (changed === 'w' && wInput.value) {
+                hInput.value = Math.round(parseInt(wInput.value) / aspectRatio);
+            } else if (changed === 'h' && hInput.value) {
+                wInput.value = Math.round(parseInt(hInput.value) * aspectRatio);
+            }
+
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(renderPreview, 150);
+        }
+
+        function toggleLockRatio() {
+            lockRatio = !lockRatio;
+            const btn = document.getElementById('lockRatioBtn');
+            btn.innerHTML = lockRatio ? '&#128274; 锁定比例' : '&#128275; 解锁比例';
+            btn.style.color = lockRatio ? 'var(--text-muted)' : 'var(--text-dim)';
+        }
+
+        function resetSize() {
+            if (!originalImage) return;
+            document.getElementById('resizeW').value = originalW;
+            document.getElementById('resizeH').value = originalH;
+            renderPreview();
+        }
+
+        function doubleSize() {
+            if (!originalImage) return;
+            const base = parseInt(document.getElementById('resizeW').value) || originalW;
+            const baseH = parseInt(document.getElementById('resizeH').value) || originalH;
+            document.getElementById('resizeW').value = base * 2;
+            document.getElementById('resizeH').value = baseH * 2;
+            renderPreview();
+        }
+
+        function halfSize() {
+            if (!originalImage) return;
+            const base = parseInt(document.getElementById('resizeW').value) || originalW;
+            const baseH = parseInt(document.getElementById('resizeH').value) || originalH;
+            document.getElementById('resizeW').value = Math.max(1, Math.round(base / 2));
+            document.getElementById('resizeH').value = Math.max(1, Math.round(baseH / 2));
+            renderPreview();
+        }
+
+        function powerOf2Size() {
+            if (!originalImage) return;
+            const w = parseInt(document.getElementById('resizeW').value) || originalW;
+            const h = parseInt(document.getElementById('resizeH').value) || originalH;
+            const p2w = Math.pow(2, Math.round(Math.log2(w)));
+            const p2h = Math.pow(2, Math.round(Math.log2(h)));
+            document.getElementById('resizeW').value = Math.max(1, p2w);
+            document.getElementById('resizeH').value = Math.max(1, p2h);
+            renderPreview();
+        }
+
+        function handleTagInput(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.target.value.trim();
+                if (val) {
+                    const tag = document.createElement('span');
+                    tag.className = 'tag';
+                    tag.innerHTML = `${val} <button onclick="removeTag(this)">&times;</button>`;
+                    e.target.parentNode.insertBefore(tag, e.target);
+                    e.target.value = '';
+                }
+            }
+        }
+
+        function removeTag(btn) { btn.parentElement.remove(); }
+
+        function getTags() {
+            const tags = [];
+            document.querySelectorAll('#tagInput .tag').forEach(tag => {
+                tags.push(tag.childNodes[0].textContent.trim());
+            });
+            return tags;
+        }
+
+        // 将图片文件缩放到指定尺寸，返回新的 PNG Blob
+        function resizeImageFile(file, targetW, targetH, doTransparent, tolerance) {
+            return new Promise((resolve) => {
+                if ((targetW <= 0 || targetH <= 0) && !doTransparent) {
+                    if (doTransparent) {
+                        // 只做透明底不缩放
+                        processTransparent(file, 0, 0, tolerance).then(resolve);
+                    } else {
+                        resolve(file);
+                    }
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const outW = targetW > 0 ? targetW : img.naturalWidth;
+                        const outH = targetH > 0 ? targetH : img.naturalHeight;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = outW;
+                        canvas.height = outH;
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, outW, outH);
+
+                        // 去除白色背景
+                        if (doTransparent) {
+                            const imageData = ctx.getImageData(0, 0, outW, outH);
+                            const data = imageData.data;
+                            const tol = (tolerance || 30) * 2.55;
+                            for (let i = 0; i < data.length; i += 4) {
+                                if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
+                                    data[i + 3] = 0;
+                                }
+                            }
+                            ctx.putImageData(imageData, 0, 0);
+                        }
+
+                        canvas.toBlob(function(blob) {
+                            if (blob) {
+                                resolve(new File([blob], file.name, { type: 'image/png' }));
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/png');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 仅做透明底处理（不缩放）
+        function processTransparent(file, targetW, targetH, tolerance) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const w = targetW > 0 ? targetW : img.naturalWidth;
+                        const h = targetH > 0 ? targetH : img.naturalHeight;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        const imageData = ctx.getImageData(0, 0, w, h);
+                        const data = imageData.data;
+                        const tol = (tolerance || 30) * 2.55;
+                        for (let i = 0; i < data.length; i += 4) {
+                            if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
+                                data[i + 3] = 0;
+                            }
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+
+                        canvas.toBlob(function(blob) {
+                            if (blob) {
+                                resolve(new File([blob], file.name, { type: 'image/png' }));
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/png');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function saveTexture() {
+            const name = document.getElementById('texName').value.trim();
+            const displayName = document.getElementById('texDisplayName').value.trim();
+            const index = parseInt(document.getElementById('editingIndex').value);
+
+            if (!name) {
+                showToast('请输入涂装名称！', 'error');
+                return;
+            }
+
+            if (!tempFiles.color) {
+                showToast('请上传 Color Texture PNG 图片！', 'error');
+                return;
+            }
+
+            const resizeW = parseInt(document.getElementById('resizeW').value) || 0;
+            const resizeH = parseInt(document.getElementById('resizeH').value) || 0;
+            const transparentBg = document.getElementById('transparentBg').checked;
+            const transparentTolerance = parseInt(document.getElementById('transparentTolerance').value) || 30;
+
+            const texData = {
+                name: name,
+                displayName: displayName || name + ' unhidden',
+                colorFile: tempFiles.color,
+                shadowFile: tempFiles.shadow,
+                shapeFile: tempFiles.shape,
+                tags: getTags(),
+                resizeW: resizeW,
+                resizeH: resizeH,
+                originalW: originalW,
+                originalH: originalH,
+                transparentBg: transparentBg,
+                transparentTolerance: transparentTolerance
+            };
+
+            if (index === -1) {
+                textures.push(texData);
+                showToast('涂装已添加', 'success');
+            } else {
+                textures[index] = texData;
+                showToast('涂装已更新', 'success');
+            }
+
+            updateTextureList();
+            updatePreview();
+            closeTextureModal();
+        }
+
+        function deleteTexture(index) {
+            if (confirm('确定要删除这个涂装吗？')) {
+                textures.splice(index, 1);
+                updateTextureList();
+                updatePreview();
+                showToast('涂装已删除', 'info');
+            }
+        }
+
+        function updateTextureList() {
+            const container = document.getElementById('textureList');
+            document.getElementById('textureCount').textContent = textures.length + ' 个涂装';
+
+            if (textures.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>还没有添加涂装，点击下方按钮添加</p></div>';
+                return;
+            }
+
+            container.innerHTML = textures.map((tex, i) => {
+                let imgPreview = '';
+                if (tex.colorFile) {
+                    const url = URL.createObjectURL(tex.colorFile);
+                    imgPreview = `<img src="${url}" class="texture-preview-img" alt="preview">`;
+                }
+
+                let sizeInfo = '';
+                if (tex.originalW && tex.originalH) {
+                    if (tex.resizeW > 0 && tex.resizeH > 0) {
+                        sizeInfo = `原始 ${tex.originalW}x${tex.originalH} &rarr; 输出 ${tex.resizeW}x${tex.resizeH}`;
+                    } else {
+                        sizeInfo = `尺寸 ${tex.originalW}x${tex.originalH} (原始)`;
+                    }
+                }
+
+                let extraInfo = '';
+                if (tex.shadowFile) extraInfo += ' <span style="color:var(--warning)">Shadow</span>';
+                if (tex.shapeFile) extraInfo += ' <span style="color:#888">Shape</span>';
+                if (tex.transparentBg) extraInfo += ' <span style="color:#888">透明底</span>';
+
+                return `
+                    <div class="texture-item">
+                        <div class="texture-header">
+                            <div>
+                                <div class="texture-name">${tex.name}</div>
+                                <div class="texture-meta">${tex.displayName} &middot; ${tex.tags.join(', ')}${extraInfo}</div>
+                                ${sizeInfo ? `<div class="texture-size-info">${sizeInfo}</div>` : ''}
+                            </div>
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                <button class="btn btn-secondary" onclick="openTextureModal(${i})">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteTexture(${i})">删除</button>
+                            </div>
+                        </div>
+                        <div class="texture-body">
+                            ${imgPreview}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updatePreview() {
+            const packName = document.getElementById('packName').value || '未命名';
+            const preview = document.getElementById('filePreview');
+
+            let html = `<span class="tree-folder">${packName}/</span>\n`;
+            html += `  <span class="tree-file">pack_info.txt</span>\n`;
+            if (packIconFile) {
+                html += `  <span class="tree-file">icon.png</span>\n`;
+            }
+            html += `  <span class="tree-folder">Color Textures/</span>\n`;
+            textures.forEach(tex => {
+                html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
+            });
+
+            const hasShadow = textures.some(t => t.shadowFile);
+            const hasShape = textures.some(t => t.shapeFile);
+
+            if (hasShadow) {
+                html += `  <span class="tree-folder">Shadow Textures/</span>\n`;
+                textures.filter(t => t.shadowFile).forEach(tex => {
+                    html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
+                });
+            }
+
+            if (hasShape) {
+                html += `  <span class="tree-folder">Shape Textures/</span>\n`;
+                textures.filter(t => t.shapeFile).forEach(tex => {
+                    html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
+                });
+            }
+
+            html += `  <span class="tree-folder">Textures/</span>\n`;
+            textures.forEach(tex => {
+                const sizeNote = (tex.resizeW > 0 && tex.resizeH > 0) ? ` [${tex.resizeW}x${tex.resizeH}]` : '';
+                html += `    <span class="tree-file">${tex.colorFile.name}${sizeNote}</span>\n`;
+                if (tex.shadowFile) html += `    <span class="tree-file">${tex.shadowFile.name}</span>\n`;
+                if (tex.shapeFile) html += `    <span class="tree-file">${tex.shapeFile.name}</span>\n`;
+            });
+            if (packIconFile) {
+                html += `    <span class="tree-file">icon.png</span>\n`;
+            }
+
+            preview.innerHTML = html;
+        }
+
+        ['packName', 'packVersion', 'packDesc', 'packAuthor'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        async function generatePack() {
+            const packName = document.getElementById('packName').value.trim();
+            if (!packName) { showToast('请输入包显示名称！', 'error'); return; }
+            if (textures.length === 0) { showToast('请至少添加一个涂装！', 'error'); return; }
+
+            showToast('正在生成涂装包...', 'info');
+
+            const zip = new JSZip();
+            const root = zip.folder(packName);
+            const colorFolder = root.folder('Color Textures');
+            const shadowFolder = root.folder('Shadow Textures');
+            const shapeFolder = root.folder('Shape Textures');
+            const texturesFolder = root.folder('Textures');
+
+            // pack_info.txt
+            const packInfo = {
+                DisplayName: packName,
+                Version: document.getElementById('packVersion').value || '1.0.0',
+                Description: document.getElementById('packDesc').value || '',
+                Author: document.getElementById('packAuthor').value || '',
+                ShowIcon: !!packIconFile,
+                Icon: packIconFile ? 'icon.png' : null,
+                name: '',
+                hideFlags: 0
+            };
+            root.file('pack_info.txt', JSON.stringify(packInfo, null, 2));
+
+            if (packIconFile) {
+                texturesFolder.file('icon.png', packIconFile);
+            }
+
+            // 处理每个涂装
+            for (const tex of textures) {
+                const resizeW = tex.resizeW || 0;
+                const resizeH = tex.resizeH || 0;
+                const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH, tex.transparentBg, tex.transparentTolerance);
+
+                const baseConfig = {
+                    colorTex: {
+                        textures: [{ texture: colorFileToUse.name, ideal: 0.0 }],
+                        border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                        border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                        center: {
+                            mode: 0, sizeMode: 0, size: 0.5,
+                            logoHeightPercent: 0.5, scaleLogoToFit: false
+                        },
+                        fixedWidth: false,
+                        fixedWidthValue: 1.0,
+                        flipToLight_X: false,
+                        flipToLight_Y: false,
+                        metalTexture: false,
+                        icon: null
+                    },
+                    tags: tex.tags,
+                    pack_Redstone_Atlas: false,
+                    multiple: false,
+                    segments: [],
+                    name: tex.displayName,
+                    hideFlags: 0
+                };
+
+                colorFolder.file(tex.name + '.txt', JSON.stringify(baseConfig, null, 2));
+                texturesFolder.file(colorFileToUse.name, colorFileToUse);
+
+                if (tex.shadowFile) {
+                    const shadowConfig = JSON.parse(JSON.stringify(baseConfig));
+                    shadowConfig.colorTex.textures[0].texture = tex.shadowFile.name;
+                    shadowFolder.file(tex.name + '.txt', JSON.stringify(shadowConfig, null, 2));
+                    texturesFolder.file(tex.shadowFile.name, tex.shadowFile);
+                }
+
+                if (tex.shapeFile) {
+                    const shapeConfig = JSON.parse(JSON.stringify(baseConfig));
+                    shapeConfig.colorTex.textures[0].texture = tex.shapeFile.name;
+                    shapeFolder.file(tex.name + '.txt', JSON.stringify(shapeConfig, null, 2));
+                    texturesFolder.file(tex.shapeFile.name, tex.shapeFile);
+                }
+            }
+
+            try {
+                const blob = await zip.generateAsync({ type: 'blob' });
+                saveAs(blob, packName + '.zip');
+                showToast('涂装包已生成！', 'success');
+            } catch (err) {
+                showToast('生成失败：' + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
