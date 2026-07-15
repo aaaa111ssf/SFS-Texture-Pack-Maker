@@ -782,11 +782,11 @@
                     <input type="text" id="packAuthor" placeholder="作者名称">
                 </div>
                 <div class="form-group">
-                    <label>包图标 (仅限 PNG，可选)</label>
+                    <label>包图标 (自动转 PNG，可选)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="packIcon" accept=".png">
+                        <input type="file" id="packIcon" accept="image/*">
                         <div class="file-input-label" id="packIconLabel">
-                            点击或拖拽上传图标 (PNG)
+                            点击或拖拽上传图标 (自动转 PNG)
                         </div>
                     </div>
                     <img id="packIconPreview" class="icon-preview" style="display:none">
@@ -820,9 +820,9 @@
                     + 添加涂装
                 </button>
                 <button class="btn btn-secondary" onclick="document.getElementById('batchImportInput').click();">
-                    批量导入 PNG
+                    批量导入图片
                 </button>
-                <input type="file" id="batchImportInput" accept=".png" multiple style="display:none" onchange="handleBatchImport(this)">
+                <input type="file" id="batchImportInput" accept="image/*" multiple style="display:none" onchange="handleBatchImport(this)">
                 <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();">
                     导入涂装包
                 </button>
@@ -913,9 +913,9 @@
             <div class="form-group">
                 <label>Color Texture 图片 * <span class="original-dim" id="colorOrigDim"></span></label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="texColorFile" accept=".png" onchange="handleFileSelect(this, 'color')">
+                    <input type="file" id="texColorFile" accept="image/*" onchange="handleFileSelect(this, 'color')">
                     <div class="file-input-label" id="texColorLabel">
-                        点击或拖拽上传 PNG 图片 (必须)
+                        点击或拖拽上传图片 (自动转 PNG)
                     </div>
                 </div>
             </div>
@@ -1107,9 +1107,9 @@
                     <div class="form-group">
                         <label>Shadow Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="texShadowFile" accept=".png" onchange="handleFileSelect(this, 'shadow')">
+                            <input type="file" id="texShadowFile" accept="image/*" onchange="handleFileSelect(this, 'shadow')">
                             <div class="file-input-label" id="texShadowLabel">
-                                上传 Shadow PNG (可选)
+                                上传 Shadow 图片 (自动转 PNG)
                             </div>
                         </div>
                     </div>
@@ -1117,9 +1117,9 @@
                     <div class="form-group">
                         <label>Shape Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="texShapeFile" accept=".png" onchange="handleFileSelect(this, 'shape')">
+                            <input type="file" id="texShapeFile" accept="image/*" onchange="handleFileSelect(this, 'shape')">
                             <div class="file-input-label" id="texShapeLabel">
-                                上传 Shape PNG (可选)
+                                上传 Shape 图片 (自动转 PNG)
                             </div>
                         </div>
                     </div>
@@ -1157,25 +1157,30 @@
             document.getElementById('packIcon').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.png')) {
-                    showToast('图标格式必须是 PNG！', 'error');
+                const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
+                if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
+                    showToast('请上传图片文件！', 'error');
                     e.target.value = '';
-                    const lbl = document.getElementById('packIconLabel');
-                    lbl.textContent = '仅支持 PNG 格式';
-                    lbl.classList.add('error');
-                    setTimeout(() => { lbl.classList.remove('error'); lbl.textContent = '点击或拖拽上传图标 (PNG)'; }, 2500);
                     return;
                 }
-                packIconFile = file;
-                const lbl = document.getElementById('packIconLabel');
-                lbl.textContent = file.name + ' (' + formatBytes(file.size) + ')';
-                lbl.classList.add('has-file');
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    document.getElementById('packIconPreview').src = ev.target.result;
-                    document.getElementById('packIconPreview').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+                convertToPNG(file).then(pngFile => {
+                    packIconFile = pngFile;
+                    const lbl = document.getElementById('packIconLabel');
+                    lbl.textContent = pngFile.name + ' (' + formatBytes(pngFile.size) + ')';
+                    lbl.classList.add('has-file');
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        document.getElementById('packIconPreview').src = ev.target.result;
+                        document.getElementById('packIconPreview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(pngFile);
+                    if (!file.name.toLowerCase().endsWith('.png')) {
+                        showToast('已自动转换为 PNG', 'success');
+                    }
+                }).catch(err => {
+                    showToast('转换失败：' + err.message, 'error');
+                });
+                e.target.value = '';
             });
         });
 
@@ -1368,23 +1373,66 @@
             originalImage = null;
         }
 
+        // 将任意图片文件转换为 PNG 格式
+        function convertToPNG(file) {
+            return new Promise((resolve, reject) => {
+                const name = file.name.replace(/\.[^.]+$/, '') + '.png';
+                // 已经是 PNG 直接返回
+                if (file.type === 'image/png' || file.name.toLowerCase().endsWith('.png')) {
+                    resolve(file);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        canvas.toBlob(function(blob) {
+                            if (blob) {
+                                resolve(new File([blob], name, { type: 'image/png' }));
+                            } else {
+                                reject(new Error('转换失败'));
+                            }
+                        }, 'image/png');
+                    };
+                    img.onerror = function() { reject(new Error('图片加载失败')); };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() { reject(new Error('文件读取失败')); };
+                reader.readAsDataURL(file);
+            });
+        }
+
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
-            if (!file.name.toLowerCase().endsWith('.png')) {
-                showToast('图片格式必须是 PNG！', 'error');
+            const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
+            if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
+                showToast('请上传图片文件！', 'error');
                 input.value = '';
                 return;
             }
-            tempFiles[type] = file;
-            const labelMap = { color: 'texColorLabel', shadow: 'texShadowLabel', shape: 'texShapeLabel' };
-            const lbl = document.getElementById(labelMap[type]);
-            lbl.textContent = file.name + ' (' + formatBytes(file.size) + ')';
-            lbl.classList.add('has-file');
-
-            if (type === 'color') {
-                loadImageForPreview(file, 0, 0);
-            }
+            showToast('正在转换为 PNG...', 'info');
+            convertToPNG(file).then(pngFile => {
+                tempFiles[type] = pngFile;
+                const labelMap = { color: 'texColorLabel', shadow: 'texShadowLabel', shape: 'texShapeLabel' };
+                const lbl = document.getElementById(labelMap[type]);
+                lbl.textContent = pngFile.name + ' (' + formatBytes(pngFile.size) + ')';
+                lbl.classList.add('has-file');
+                if (type === 'color') {
+                    loadImageForPreview(pngFile, 0, 0);
+                }
+                if (!file.name.toLowerCase().endsWith('.png')) {
+                    showToast('已自动转换为 PNG', 'success');
+                }
+            }).catch(err => {
+                showToast('转换失败：' + err.message, 'error');
+            });
+            input.value = '';
         }
 
         function loadImageForPreview(file, presetW, presetH) {
@@ -1649,35 +1697,53 @@
         }
 
         // 批量导入 PNG
-        function handleBatchImport(input) {
+        async function handleBatchImport(input) {
             const files = Array.from(input.files);
             if (!files.length) return;
 
-            let count = 0;
-            files.forEach(file => {
-                if (!file.name.toLowerCase().endsWith('.png')) return;
-                const name = file.name.replace(/\.png$/i, '');
-                textures.push({
-                    name: name,
-                    displayName: name + ' unhidden',
-                    colorFile: file,
-                    shadowFile: null,
-                    shapeFile: null,
-                    tags: ['tank', 'cone', 'fairing', 'probe'],
-                    resizeW: 0,
-                    resizeH: 0,
-                    originalW: 0,
-                    originalH: 0
-                });
-                count++;
+            const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
+            const imageFiles = files.filter(f => {
+                return imageTypes.includes(f.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name);
             });
+
+            if (imageFiles.length === 0) {
+                showToast('未找到有效的图片文件！', 'error');
+                input.value = '';
+                return;
+            }
+
+            showToast('正在转换 ' + imageFiles.length + ' 张图片...', 'info');
+
+            let count = 0;
+            for (const file of imageFiles) {
+                try {
+                    const pngFile = await convertToPNG(file);
+                    const name = pngFile.name.replace(/\.png$/i, '');
+                    textures.push({
+                        name: name,
+                        displayName: name + ' unhidden',
+                        colorFile: pngFile,
+                        shadowFile: null,
+                        shapeFile: null,
+                        tags: ['tank', 'cone', 'fairing', 'probe'],
+                        resizeW: 0,
+                        resizeH: 0,
+                        originalW: 0,
+                        originalH: 0
+                    });
+                    count++;
+                } catch(e) {
+                    console.warn('转换失败:', file.name, e);
+                }
+            }
 
             if (count > 0) {
                 updateTextureList();
                 updatePreview();
                 showToast('已批量导入 ' + count + ' 个涂装', 'success');
+            } else {
+                showToast('未能导入任何图片', 'error');
             }
-            // 重置 input，允许重复选择同一批文件
             input.value = '';
         }
 
