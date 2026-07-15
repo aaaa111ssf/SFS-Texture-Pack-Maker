@@ -2,7 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>SFS 涂装包制作器</title>
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -29,12 +34,25 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html {
+            height: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
+            min-height: 100dvh;
             line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .container {
@@ -122,6 +140,7 @@
             position: relative;
             display: inline-block;
             width: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .file-input-wrapper input[type="file"] {
@@ -130,6 +149,9 @@
             left: 0; top: 0;
             width: 100%; height: 100%;
             cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            z-index: 2;
         }
 
         .file-input-label {
@@ -357,6 +379,7 @@
             color: var(--text);
             flex: 1;
             min-width: 100px;
+            font-size: 0.95rem;
         }
 
         .tag-input input:focus { outline: none; }
@@ -373,10 +396,13 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
+            width: 100vw; height: 100vh;
+            height: 100dvh;
             background: rgba(0,0,0,0.8);
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal-overlay.visible { display: flex; }
@@ -389,7 +415,10 @@
             max-width: 640px;
             width: 92%;
             max-height: 85vh;
+            max-height: 85dvh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .modal h3 {
@@ -746,8 +775,40 @@
         @media (max-width: 768px) {
             .grid-2 { grid-template-columns: 1fr; }
             header h1 { font-size: 1.6rem; }
-            .toolbar { flex-direction: column; align-items: stretch; }
+            header { padding: 28px 16px 20px; }
+            .container { padding: 12px; }
+            .card { padding: 16px; border-radius: 8px; }
+            .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
             .texture-body { flex-direction: column; }
+            .texture-header { flex-direction: column; gap: 8px; }
+            .texture-header > div:last-child { width: 100%; justify-content: flex-end; }
+            .btn { padding: 10px 16px; font-size: 0.9rem; min-height: 44px; }
+            .file-input-label { min-height: 44px; padding: 12px 16px; font-size: 0.9rem; }
+            input[type="text"], input[type="number"], select, textarea {
+                min-height: 44px; padding: 10px 14px; font-size: 16px;
+            }
+            textarea { min-height: 80px; }
+            .modal { max-width: 100%; max-height: 90vh; max-height: 90dvh; margin: 5vh 0 0; border-radius: 12px 12px 0 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+            .modal-overlay { align-items: flex-end; }
+            .advanced-toggle span { font-size: 0.85rem; }
+            .preset-chip { min-height: 44px; min-width: 60px; font-size: 0.82rem; }
+            .adv-param-grid { grid-template-columns: 1fr; }
+            .help-table td:first-child { width: 120px; white-space: normal; }
+            .section-label { font-size: 0.8rem; }
+            .preset-group-label { font-size: 0.75rem; }
+            .tag { font-size: 0.8rem; min-height: 32px; padding: 4px 10px; }
+            .tag-input input { font-size: 16px; min-height: 32px; }
+            .texture-preview-img { max-height: 100px; }
+        }
+
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.3rem; }
+            header p { font-size: 0.85rem; }
+            .stats { font-size: 0.78rem; }
+            .texture-name { font-size: 0.95rem; }
+            .texture-meta { font-size: 0.78rem; }
+            .toast { max-width: 90vw; font-size: 0.85rem; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; right: auto; transform: translate(-50%, 100px); }
+            .toast.show { transform: translate(-50%, 0); opacity: 1; }
         }
     </style>
 </head>
@@ -784,7 +845,7 @@
                 <div class="form-group">
                     <label>包图标 (自动转 PNG，可选)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="packIcon" accept="image/*">
+                        <input type="file" id="packIcon" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp">
                         <div class="file-input-label" id="packIconLabel">
                             点击或拖拽上传图标 (自动转 PNG)
                         </div>
@@ -822,7 +883,7 @@
                 <button class="btn btn-secondary" onclick="document.getElementById('batchImportInput').click();">
                     批量导入图片
                 </button>
-                <input type="file" id="batchImportInput" accept="image/*" multiple style="display:none" onchange="handleBatchImport(this)">
+                <input type="file" id="batchImportInput" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" multiple style="display:none" onchange="handleBatchImport(this)">
                 <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();">
                     导入涂装包
                 </button>
@@ -913,7 +974,7 @@
             <div class="form-group">
                 <label>Color Texture 图片 * <span class="original-dim" id="colorOrigDim"></span></label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="texColorFile" accept="image/*" onchange="handleFileSelect(this, 'color')">
+                    <input type="file" id="texColorFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'color')">
                     <div class="file-input-label" id="texColorLabel">
                         点击或拖拽上传图片 (自动转 PNG)
                     </div>
@@ -1107,7 +1168,7 @@
                     <div class="form-group">
                         <label>Shadow Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="texShadowFile" accept="image/*" onchange="handleFileSelect(this, 'shadow')">
+                            <input type="file" id="texShadowFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shadow')">
                             <div class="file-input-label" id="texShadowLabel">
                                 上传 Shadow 图片 (自动转 PNG)
                             </div>
@@ -1117,7 +1178,7 @@
                     <div class="form-group">
                         <label>Shape Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="texShapeFile" accept="image/*" onchange="handleFileSelect(this, 'shape')">
+                            <input type="file" id="texShapeFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shape')">
                             <div class="file-input-label" id="texShapeLabel">
                                 上传 Shape 图片 (自动转 PNG)
                             </div>
@@ -1149,8 +1210,100 @@
         let lockRatio = true;
         let resizeTimer = null;
 
+        // ===== 移动端适配修复 =====
+        // 修复 iOS Safari 选择图片后页面缩放/偏移问题
+        function fixMobileViewport() {
+            // 强制重置视口缩放
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                const content = viewport.content;
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover';
+                // 强制重排
+                document.body.style.transform = 'scale(1)';
+                setTimeout(() => {
+                    document.body.style.transform = '';
+                }, 10);
+            }
+            // 滚动到顶部防止偏移
+            if (window.scrollY !== 0) {
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // 检测是否为移动设备
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                || (window.innerWidth <= 768);
+        }
+
+        // 处理文件选择后的视口修复（iOS Safari 常见问题）
+        function handleFileSelectFix() {
+            if (isMobile()) {
+                // 延迟修复，等待文件选择器完全关闭
+                setTimeout(fixMobileViewport, 100);
+                setTimeout(fixMobileViewport, 300);
+                setTimeout(fixMobileViewport, 500);
+            }
+        }
+
+        // 监听页面可见性变化（从文件选择器返回时触发）
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && isMobile()) {
+                handleFileSelectFix();
+            }
+        });
+
+        // 监听窗口大小变化（键盘弹出/收起，文件选择器关闭等）
+        let windowResizeTimer = null;
+        window.addEventListener('resize', function() {
+            if (windowResizeTimer) clearTimeout(windowResizeTimer);
+            windowResizeTimer = setTimeout(function() {
+                if (isMobile()) {
+                    fixMobileViewport();
+                    // 更新模态框最大高度
+                    updateModalHeight();
+                }
+            }, 100);
+        });
+
+        // 更新模态框高度以适应动态视口
+        function updateModalHeight() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                const overlay = modal.closest('.modal-overlay');
+                if (overlay && overlay.classList.contains('visible')) {
+                    const vh = window.innerHeight * 0.9;
+                    modal.style.maxHeight = vh + 'px';
+                }
+            });
+        }
+
+        // 给所有文件输入添加修复回调
+        function setupFileInputFixes() {
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(input => {
+                // 点击时记录滚动位置
+                input.addEventListener('click', function() {
+                    if (isMobile()) {
+                        window._lastScrollY = window.scrollY;
+                    }
+                }, true);
+                // 选择文件后修复视口
+                input.addEventListener('change', function() {
+                    handleFileSelectFix();
+                });
+                // 触摸开始时也记录
+                input.addEventListener('touchstart', function() {
+                    if (isMobile()) {
+                        window._lastScrollY = window.scrollY;
+                    }
+                }, true);
+            });
+        }
+
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
+            setupFileInputFixes();
             updatePreview();
             updateTextureList();
 
@@ -1231,6 +1384,14 @@
         function openTextureModal(index = -1) {
             document.getElementById('textureModal').classList.add('visible');
             document.body.style.overflow = 'hidden';
+            // 移动端适配：动态设置模态框高度
+            if (isMobile()) {
+                const modal = document.querySelector('#textureModal .modal');
+                const vh = window.innerHeight * 0.9;
+                modal.style.maxHeight = vh + 'px';
+                // 重置滚动位置
+                modal.scrollTop = 0;
+            }
             document.getElementById('editingIndex').value = index;
             document.getElementById('modalTitle').textContent = index === -1 ? '添加涂装' : '编辑涂装';
 
@@ -1344,6 +1505,12 @@
         function closeTextureModal() {
             document.getElementById('textureModal').classList.remove('visible');
             document.body.style.overflow = '';
+            // 移动端关闭时重置模态框高度并修复视口
+            if (isMobile()) {
+                const modal = document.querySelector('#textureModal .modal');
+                modal.style.maxHeight = '';
+                fixMobileViewport();
+            }
         }
 
         function renderSegmentsPreview() {
