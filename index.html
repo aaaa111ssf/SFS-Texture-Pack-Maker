@@ -11,20 +11,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
-            --bg: #0a0a0a;
-            --bg-card: #141414;
-            --bg-hover: #1f1f1f;
-            --bg-input: #0e0e0e;
-            --text: #e8e8e8;
-            --text-muted: #777;
-            --text-dim: #444;
+            --bg: #000000;
+            --bg-card: #0d0d0d;
+            --bg-hover: #1a1a1a;
+            --bg-input: #050505;
+            --text: #ffffff;
+            --text-muted: #aaa;
+            --text-dim: #666;
             --accent: #fff;
-            --accent-hover: #ccc;
-            --danger: #b33;
-            --success: #3a3;
-            --warning: #aa8800;
-            --border: #2a2a2a;
-            --border-light: #333;
+            --accent-hover: #ddd;
+            --danger: #ff4444;
+            --success: #44dd44;
+            --warning: #ffcc00;
+            --border: #3a3a3a;
+            --border-light: #555;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -277,8 +277,29 @@
         }
 
         .advanced-toggle input {
-            width: 16px; height: 16px;
+            width: 18px; height: 18px;
             accent-color: #fff;
+            -webkit-appearance: none;
+            appearance: none;
+            border: 2px solid #fff;
+            border-radius: 3px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            vertical-align: middle;
+        }
+        .advanced-toggle input:checked {
+            background: #fff;
+        }
+        .advanced-toggle input:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
         }
 
         .advanced-section {
@@ -533,41 +554,6 @@
             font-size: 0.72rem;
         }
 
-        /* 透明底 */
-        .transparent-section {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .transparent-section label {
-            margin-bottom: 0;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .transparent-section input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: #fff;
-        }
-
-        .transparent-section input[type="range"] {
-            width: 120px;
-            accent-color: #fff;
-        }
-
-        .tolerance-val {
-            font-size: 0.78rem;
-            color: var(--text-dim);
-            min-width: 30px;
-        }
 
         .link-btn {
             background: none;
@@ -609,6 +595,79 @@
             font-size: 0.78rem;
             color: var(--text-muted);
             margin-left: 8px;
+        }
+
+        /* 高级参数折叠面板 */
+        .adv-param-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 12px 0 0;
+            padding: 8px 0;
+            border-top: 1px dashed var(--border);
+            user-select: none;
+        }
+        .adv-param-toggle:hover { color: var(--text); }
+        .adv-param-panel {
+            display: none;
+            margin-top: 8px;
+        }
+        .adv-param-panel.visible { display: block; }
+        .adv-param-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .adv-param-grid .form-group { margin-bottom: 10px; }
+        .adv-param-grid label { font-size: 0.8rem; margin-bottom: 4px; }
+        .adv-param-grid input[type="number"],
+        .adv-param-grid select {
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+        .adv-param-grid select {
+            appearance: auto;
+        }
+        .adv-param-grid .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 0;
+        }
+        .adv-param-grid .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #fff;
+            -webkit-appearance: none;
+            appearance: none;
+            border: 2px solid #fff;
+            border-radius: 3px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+        .adv-param-grid .checkbox-group input[type="checkbox"]:checked {
+            background: #fff;
+        }
+        .adv-param-grid .checkbox-group input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .adv-param-grid .checkbox-group label {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            cursor: pointer;
         }
 
         @media (max-width: 768px) {
@@ -683,10 +742,18 @@
                 </div>
             </div>
 
-            <div style="margin-top: 20px;">
+            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="openTextureModal()">
                     + 添加涂装
                 </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('batchImportInput').click();">
+                    批量导入 PNG
+                </button>
+                <input type="file" id="batchImportInput" accept=".png" multiple style="display:none" onchange="handleBatchImport(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();">
+                    导入涂装包
+                </button>
+                <input type="file" id="importPackInput" accept=".zip" style="display:none" onchange="handleImportPack(this)">
             </div>
         </div>
 
@@ -786,14 +853,6 @@
                         <span class="preset-chip" onclick="applyPreset(64,128)">小部件<span class="preset-dim">64x128</span></span>
                     </div>
                 </div>
-
-                <!-- 一键透明底 -->
-                <div class="transparent-section">
-                    <label><input type="checkbox" id="transparentBg" onchange="renderPreview()"> 去除白色背景</label>
-                    <label style="font-size:0.78rem; color:var(--text-dim);">容差</label>
-                    <input type="range" id="transparentTolerance" min="1" max="100" value="30" oninput="document.getElementById('toleranceVal').textContent=this.value; renderPreview();">
-                    <span class="tolerance-val" id="toleranceVal">30</span>
-                </div>
             </div>
 
             <!-- 实时预览画布 -->
@@ -812,6 +871,113 @@
                         <span class="tag">cone <button onclick="removeTag(this)">&times;</button></span>
                         <span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span>
                         <input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">
+                    </div>
+                </div>
+
+                <!-- colorTex 高级参数 -->
+                <div class="adv-param-toggle" onclick="document.getElementById('advParamPanel').classList.toggle('visible');">
+                    <span>&#9654;</span> colorTex 高级参数 (通常无需修改)
+                </div>
+                <div class="adv-param-panel" id="advParamPanel">
+                    <div class="adv-param-grid">
+                        <div class="form-group">
+                            <label>ideal</label>
+                            <input type="number" id="adv_ideal" value="0.0" step="0.1" min="0" max="1">
+                        </div>
+                        <div class="form-group">
+                            <label>border_Bottom: sizeMode</label>
+                            <select id="adv_borderBottom_sizeMode">
+                                <option value="0" selected>0 - Aspect</option>
+                                <option value="1">1 - UV</option>
+                                <option value="2">2 - Screen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>border_Bottom: size</label>
+                            <input type="number" id="adv_borderBottom_size" value="0.5" step="0.1" min="0" max="2">
+                        </div>
+                        <div class="form-group">
+                            <label>border_Bottom: uvSize</label>
+                            <input type="number" id="adv_borderBottom_uvSize" value="0.0" step="0.1" min="0" max="1">
+                        </div>
+                        <div class="form-group">
+                            <label>border_Top: sizeMode</label>
+                            <select id="adv_borderTop_sizeMode">
+                                <option value="0" selected>0 - Aspect</option>
+                                <option value="1">1 - UV</option>
+                                <option value="2">2 - Screen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>border_Top: size</label>
+                            <input type="number" id="adv_borderTop_size" value="0.5" step="0.1" min="0" max="2">
+                        </div>
+                        <div class="form-group">
+                            <label>border_Top: uvSize</label>
+                            <input type="number" id="adv_borderTop_uvSize" value="0.0" step="0.1" min="0" max="1">
+                        </div>
+                        <div class="form-group">
+                            <label>center: mode</label>
+                            <select id="adv_center_mode">
+                                <option value="0" selected>0 - Stretch</option>
+                                <option value="1">1 - Tile</option>
+                                <option value="2">2 - Tile Fit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>center: sizeMode</label>
+                            <select id="adv_center_sizeMode">
+                                <option value="0" selected>0 - Aspect</option>
+                                <option value="1">1 - UV</option>
+                                <option value="2">2 - Screen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>center: size</label>
+                            <input type="number" id="adv_center_size" value="0.5" step="0.1" min="0" max="2">
+                        </div>
+                        <div class="form-group">
+                            <label>center: logoHeightPercent</label>
+                            <input type="number" id="adv_center_logoHeightPercent" value="0.5" step="0.1" min="0" max="1">
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_center_scaleLogoToFit">
+                            <label for="adv_center_scaleLogoToFit">center: scaleLogoToFit</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_fixedWidth">
+                            <label for="adv_fixedWidth">fixedWidth</label>
+                        </div>
+                        <div class="form-group">
+                            <label>fixedWidthValue</label>
+                            <input type="number" id="adv_fixedWidthValue" value="1.0" step="0.1">
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_flipToLight_X">
+                            <label for="adv_flipToLight_X">flipToLight_X</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_flipToLight_Y">
+                            <label for="adv_flipToLight_Y">flipToLight_Y</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_metalTexture">
+                            <label for="adv_metalTexture">metalTexture (金属质感)</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_packRedstoneAtlas">
+                            <label for="adv_packRedstoneAtlas">pack_Redstone_Atlas</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="adv_multiple">
+                            <label for="adv_multiple">multiple</label>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);">
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:6px;">
+                            Segments 分段 <span style="font-size:0.7rem;">(导入时保留，暂不支持编辑)</span>
+                        </div>
+                        <div id="segmentsPreview" style="font-size:0.78rem; color:var(--text-dim);">无</div>
                     </div>
                 </div>
 
@@ -852,6 +1018,7 @@
         let textures = [];
         let packIconFile = null;
         let tempFiles = { color: null, shadow: null, shape: null };
+        let tempSegments = []; // 当前编辑的 segments
 
         // 尺寸相关状态
         let originalImage = null;       // 原始 Image 对象
@@ -949,7 +1116,7 @@
 
                 const tagContainer = document.getElementById('tagInput');
                 tagContainer.innerHTML = '';
-                (tex.tags || ['tank', 'cone', 'fairing']).forEach(tag => {
+                (tex.tags || ['tank', 'cone', 'fairing', 'probe']).forEach(tag => {
                     tagContainer.innerHTML += `<span class="tag">${tag} <button onclick="removeTag(this)">&times;</button></span>`;
                 });
                 tagContainer.innerHTML += '<input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
@@ -978,10 +1145,33 @@
 
                 tempFiles = { color: tex.colorFile, shadow: tex.shadowFile, shape: tex.shapeFile };
 
-                // 恢复透明底设置
-                document.getElementById('transparentBg').checked = !!tex.transparentBg;
-                document.getElementById('transparentTolerance').value = tex.transparentTolerance || 30;
-                document.getElementById('toleranceVal').textContent = tex.transparentTolerance || 30;
+                // 恢复高级参数
+                if (tex.advParams) {
+                    const ap = tex.advParams;
+                    document.getElementById('adv_ideal').value = ap.ideal;
+                    document.getElementById('adv_borderBottom_sizeMode').value = ap.border_Bottom.sizeMode;
+                    document.getElementById('adv_borderBottom_size').value = ap.border_Bottom.size;
+                    document.getElementById('adv_borderBottom_uvSize').value = ap.border_Bottom.uvSize;
+                    document.getElementById('adv_borderTop_sizeMode').value = ap.border_Top.sizeMode;
+                    document.getElementById('adv_borderTop_size').value = ap.border_Top.size;
+                    document.getElementById('adv_borderTop_uvSize').value = ap.border_Top.uvSize;
+                    document.getElementById('adv_center_mode').value = ap.center.mode;
+                    document.getElementById('adv_center_sizeMode').value = ap.center.sizeMode;
+                    document.getElementById('adv_center_size').value = ap.center.size;
+                    document.getElementById('adv_center_logoHeightPercent').value = ap.center.logoHeightPercent;
+                    document.getElementById('adv_center_scaleLogoToFit').checked = ap.center.scaleLogoToFit;
+                    document.getElementById('adv_fixedWidth').checked = ap.fixedWidth;
+                    document.getElementById('adv_fixedWidthValue').value = ap.fixedWidthValue;
+                    document.getElementById('adv_flipToLight_X').checked = ap.flipToLight_X;
+                    document.getElementById('adv_flipToLight_Y').checked = ap.flipToLight_Y;
+                    document.getElementById('adv_metalTexture').checked = ap.metalTexture;
+                    document.getElementById('adv_packRedstoneAtlas').checked = ap.pack_Redstone_Atlas;
+                    document.getElementById('adv_multiple').checked = ap.multiple;
+                }
+
+                // 恢复 segments（只读）
+                tempSegments = tex.segments || [];
+                renderSegmentsPreview();
             } else {
                 document.getElementById('texName').value = '';
                 document.getElementById('texDisplayName').value = '';
@@ -993,14 +1183,51 @@
                 document.getElementById('texShapeLabel').classList.remove('has-file');
 
                 const tagContainer = document.getElementById('tagInput');
-                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
+                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><span class="tag">probe <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
 
                 tempFiles = { color: null, shadow: null, shape: null };
+                tempSegments = [];
+                renderSegmentsPreview();
+
+                // 重置高级参数
+                document.getElementById('adv_ideal').value = '0.0';
+                document.getElementById('adv_borderBottom_sizeMode').value = '0';
+                document.getElementById('adv_borderBottom_size').value = '0.5';
+                document.getElementById('adv_borderBottom_uvSize').value = '0.0';
+                document.getElementById('adv_borderTop_sizeMode').value = '0';
+                document.getElementById('adv_borderTop_size').value = '0.5';
+                document.getElementById('adv_borderTop_uvSize').value = '0.0';
+                document.getElementById('adv_center_mode').value = '0';
+                document.getElementById('adv_center_sizeMode').value = '0';
+                document.getElementById('adv_center_size').value = '0.5';
+                document.getElementById('adv_center_logoHeightPercent').value = '0.5';
+                document.getElementById('adv_center_scaleLogoToFit').checked = false;
+                document.getElementById('adv_fixedWidth').checked = false;
+                document.getElementById('adv_fixedWidthValue').value = '1.0';
+                document.getElementById('adv_flipToLight_X').checked = false;
+                document.getElementById('adv_flipToLight_Y').checked = false;
+                document.getElementById('adv_metalTexture').checked = false;
+                document.getElementById('adv_packRedstoneAtlas').checked = false;
+                document.getElementById('adv_multiple').checked = false;
+                document.getElementById('advParamPanel').classList.remove('visible');
             }
         }
 
         function closeTextureModal() {
             document.getElementById('textureModal').classList.remove('visible');
+        }
+
+        function renderSegmentsPreview() {
+            const el = document.getElementById('segmentsPreview');
+            if (!el) return;
+            if (!tempSegments || tempSegments.length === 0) {
+                el.textContent = '无';
+                return;
+            }
+            el.innerHTML = tempSegments.map((s, i) => {
+                const name = s.name || ('Segment ' + (i + 1));
+                return '<div style="margin:2px 0;">• ' + name + '</div>';
+            }).join('');
         }
 
         // 点击遮罩层空白区域关闭模态框
@@ -1014,9 +1241,6 @@
             document.getElementById('colorOrigDim').textContent = '';
             document.getElementById('resizeW').value = '';
             document.getElementById('resizeH').value = '';
-            document.getElementById('transparentBg').checked = false;
-            document.getElementById('transparentTolerance').value = 30;
-            document.getElementById('toleranceVal').textContent = '30';
             originalImage = null;
         }
 
@@ -1074,8 +1298,6 @@
             const rh = parseInt(document.getElementById('resizeH').value) || 0;
             const outW = rw > 0 ? rw : originalW;
             const outH = rh > 0 ? rh : originalH;
-            const doTransparent = document.getElementById('transparentBg').checked;
-            const tolerance = parseInt(document.getElementById('transparentTolerance').value) || 30;
 
             const canvas = document.getElementById('previewCanvas');
             canvas.width = outW;
@@ -1086,19 +1308,6 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(originalImage, 0, 0, outW, outH);
 
-            // 去除白色背景
-            if (doTransparent) {
-                const imageData = ctx.getImageData(0, 0, outW, outH);
-                const data = imageData.data;
-                const tol = tolerance * 2.55; // 0-255 范围
-                for (let i = 0; i < data.length; i += 4) {
-                    if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
-                        data[i + 3] = 0; // 设为透明
-                    }
-                }
-                ctx.putImageData(imageData, 0, 0);
-            }
-
             document.getElementById('previewArea').style.display = 'block';
 
             let info = '输出: ' + outW + ' x ' + outH;
@@ -1107,7 +1316,6 @@
             } else {
                 info += ' (原始)';
             }
-            if (doTransparent) info += ' | 透明底已开启';
             document.getElementById('canvasInfo').textContent = info;
         }
 
@@ -1199,15 +1407,10 @@
         }
 
         // 将图片文件缩放到指定尺寸，返回新的 PNG Blob
-        function resizeImageFile(file, targetW, targetH, doTransparent, tolerance) {
+        function resizeImageFile(file, targetW, targetH) {
             return new Promise((resolve) => {
-                if ((targetW <= 0 || targetH <= 0) && !doTransparent) {
-                    if (doTransparent) {
-                        // 只做透明底不缩放
-                        processTransparent(file, 0, 0, tolerance).then(resolve);
-                    } else {
-                        resolve(file);
-                    }
+                if (targetW <= 0 || targetH <= 0) {
+                    resolve(file);
                     return;
                 }
 
@@ -1215,67 +1418,13 @@
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
-                        const outW = targetW > 0 ? targetW : img.naturalWidth;
-                        const outH = targetH > 0 ? targetH : img.naturalHeight;
                         const canvas = document.createElement('canvas');
-                        canvas.width = outW;
-                        canvas.height = outH;
+                        canvas.width = targetW;
+                        canvas.height = targetH;
                         const ctx = canvas.getContext('2d');
                         ctx.imageSmoothingEnabled = true;
                         ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(img, 0, 0, outW, outH);
-
-                        // 去除白色背景
-                        if (doTransparent) {
-                            const imageData = ctx.getImageData(0, 0, outW, outH);
-                            const data = imageData.data;
-                            const tol = (tolerance || 30) * 2.55;
-                            for (let i = 0; i < data.length; i += 4) {
-                                if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
-                                    data[i + 3] = 0;
-                                }
-                            }
-                            ctx.putImageData(imageData, 0, 0);
-                        }
-
-                        canvas.toBlob(function(blob) {
-                            if (blob) {
-                                resolve(new File([blob], file.name, { type: 'image/png' }));
-                            } else {
-                                resolve(file);
-                            }
-                        }, 'image/png');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // 仅做透明底处理（不缩放）
-        function processTransparent(file, targetW, targetH, tolerance) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const w = targetW > 0 ? targetW : img.naturalWidth;
-                        const h = targetH > 0 ? targetH : img.naturalHeight;
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w;
-                        canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-
-                        const imageData = ctx.getImageData(0, 0, w, h);
-                        const data = imageData.data;
-                        const tol = (tolerance || 30) * 2.55;
-                        for (let i = 0; i < data.length; i += 4) {
-                            if (data[i] >= (255 - tol) && data[i + 1] >= (255 - tol) && data[i + 2] >= (255 - tol)) {
-                                data[i + 3] = 0;
-                            }
-                        }
-                        ctx.putImageData(imageData, 0, 0);
+                        ctx.drawImage(img, 0, 0, targetW, targetH);
 
                         canvas.toBlob(function(blob) {
                             if (blob) {
@@ -1308,8 +1457,35 @@
 
             const resizeW = parseInt(document.getElementById('resizeW').value) || 0;
             const resizeH = parseInt(document.getElementById('resizeH').value) || 0;
-            const transparentBg = document.getElementById('transparentBg').checked;
-            const transparentTolerance = parseInt(document.getElementById('transparentTolerance').value) || 30;
+
+            // 读取高级参数
+            const advParams = {
+                ideal: parseFloat(document.getElementById('adv_ideal').value) || 0.0,
+                border_Bottom: {
+                    uvSize: parseFloat(document.getElementById('adv_borderBottom_uvSize').value) || 0.0,
+                    sizeMode: parseInt(document.getElementById('adv_borderBottom_sizeMode').value) || 0,
+                    size: parseFloat(document.getElementById('adv_borderBottom_size').value) || 0.5
+                },
+                border_Top: {
+                    uvSize: parseFloat(document.getElementById('adv_borderTop_uvSize').value) || 0.0,
+                    sizeMode: parseInt(document.getElementById('adv_borderTop_sizeMode').value) || 0,
+                    size: parseFloat(document.getElementById('adv_borderTop_size').value) || 0.5
+                },
+                center: {
+                    mode: parseInt(document.getElementById('adv_center_mode').value) || 0,
+                    sizeMode: parseInt(document.getElementById('adv_center_sizeMode').value) || 0,
+                    size: parseFloat(document.getElementById('adv_center_size').value) || 0.5,
+                    logoHeightPercent: parseFloat(document.getElementById('adv_center_logoHeightPercent').value) || 0.5,
+                    scaleLogoToFit: document.getElementById('adv_center_scaleLogoToFit').checked
+                },
+                fixedWidth: document.getElementById('adv_fixedWidth').checked,
+                fixedWidthValue: parseFloat(document.getElementById('adv_fixedWidthValue').value) || 1.0,
+                flipToLight_X: document.getElementById('adv_flipToLight_X').checked,
+                flipToLight_Y: document.getElementById('adv_flipToLight_Y').checked,
+                metalTexture: document.getElementById('adv_metalTexture').checked,
+                pack_Redstone_Atlas: document.getElementById('adv_packRedstoneAtlas').checked,
+                multiple: document.getElementById('adv_multiple').checked
+            };
 
             const texData = {
                 name: name,
@@ -1322,8 +1498,8 @@
                 resizeH: resizeH,
                 originalW: originalW,
                 originalH: originalH,
-                transparentBg: transparentBg,
-                transparentTolerance: transparentTolerance
+                advParams: advParams,
+                segments: tempSegments || []
             };
 
             if (index === -1) {
@@ -1346,6 +1522,222 @@
                 updatePreview();
                 showToast('涂装已删除', 'info');
             }
+        }
+
+        // 批量导入 PNG
+        function handleBatchImport(input) {
+            const files = Array.from(input.files);
+            if (!files.length) return;
+
+            let count = 0;
+            files.forEach(file => {
+                if (!file.name.toLowerCase().endsWith('.png')) return;
+                const name = file.name.replace(/\.png$/i, '');
+                textures.push({
+                    name: name,
+                    displayName: name + ' unhidden',
+                    colorFile: file,
+                    shadowFile: null,
+                    shapeFile: null,
+                    tags: ['tank', 'cone', 'fairing', 'probe'],
+                    resizeW: 0,
+                    resizeH: 0,
+                    originalW: 0,
+                    originalH: 0
+                });
+                count++;
+            });
+
+            if (count > 0) {
+                updateTextureList();
+                updatePreview();
+                showToast('已批量导入 ' + count + ' 个涂装', 'success');
+            }
+            // 重置 input，允许重复选择同一批文件
+            input.value = '';
+        }
+
+        // 导入涂装包（合并）
+        async function handleImportPack(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+                showToast('请上传 ZIP 格式的涂装包！', 'error');
+                input.value = '';
+                return;
+            }
+
+            showToast('正在解析涂装包...', 'info');
+
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const root = Object.keys(zip.files).find(k => !k.includes('/') || k.endsWith('/'));
+                // 获取第一层文件夹名（可能没有）
+                const folders = Object.keys(zip.files).filter(k => k.endsWith('/') && k.split('/').length <= 3);
+                let packRoot = '';
+                if (folders.length > 0) {
+                    packRoot = folders[0]; // 通常是 "packname/"
+                }
+
+                // 查找 pack_info.txt
+                let packInfoPath = Object.keys(zip.files).find(k => k.toLowerCase().endsWith('pack_info.txt'));
+                let packInfo = null;
+                if (packInfoPath) {
+                    const content = await zip.file(packInfoPath).async('string');
+                    try { packInfo = JSON.parse(content); } catch(e) {}
+                }
+
+                // 读取 Color Textures/ 下的所有 .txt 配置文件
+                const colorTxtFiles = Object.keys(zip.files).filter(k => {
+                    return k.toLowerCase().includes('color textures/') && k.toLowerCase().endsWith('.txt');
+                });
+
+                if (colorTxtFiles.length === 0) {
+                    showToast('未在 ZIP 中找到 Color Textures 配置！', 'error');
+                    input.value = '';
+                    return;
+                }
+
+                // 读取 Textures/ 下的所有图片
+                const texturePngs = Object.keys(zip.files).filter(k => {
+                    return k.toLowerCase().includes('textures/') && k.toLowerCase().endsWith('.png');
+                });
+
+                let importedCount = 0;
+
+                for (const txtPath of colorTxtFiles) {
+                    const content = await zip.file(txtPath).async('string');
+                    let config = null;
+                    try { config = JSON.parse(content); } catch(e) { continue; }
+
+                    // 从路径提取涂装名
+                    const fileName = txtPath.split('/').pop().replace(/\.txt$/i, '');
+
+                    // 从 colorTex.textures[0].texture 获取图片文件名
+                    const pngName = config.colorTex && config.colorTex.textures && config.colorTex.textures[0]
+                        ? config.colorTex.textures[0].texture
+                        : (fileName + '.png');
+
+                    // 在 Textures/ 下查找对应的 PNG
+                    const pngPath = texturePngs.find(p => p.toLowerCase().endsWith('/' + pngName.toLowerCase()));
+
+                    let colorFile = null;
+                    if (pngPath) {
+                        const pngBlob = await zip.file(pngPath).async('blob');
+                        colorFile = new File([pngBlob], pngName, { type: 'image/png' });
+                    } else {
+                        // 尝试通过文件名匹配
+                        const altPngPath = texturePngs.find(p => {
+                            const fn = p.split('/').pop().toLowerCase().replace(/\.png$/, '');
+                            return fn === fileName.toLowerCase();
+                        });
+                        if (altPngPath) {
+                            const pngBlob = await zip.file(altPngPath).async('blob');
+                            const altName = altPngPath.split('/').pop();
+                            colorFile = new File([pngBlob], altName, { type: 'image/png' });
+                        }
+                    }
+
+                    if (!colorFile) {
+                        console.warn('未找到涂装图片:', fileName, pngName);
+                        continue;
+                    }
+
+                    // 读取 Shadow 和 Shape（如果有）
+                    const shadowPath = txtPath.replace(/color textures/i, 'Shadow Textures');
+                    const shapePath = txtPath.replace(/color textures/i, 'Shape Textures');
+                    let shadowFile = null, shapeFile = null;
+
+                    // 从 shadow/shape 配置中提取图片名
+                    if (zip.files[shadowPath]) {
+                        try {
+                            const sc = JSON.parse(await zip.file(shadowPath).async('string'));
+                            const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
+                                ? sc.colorTex.textures[0].texture
+                                : (fileName + '.png');
+                            const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                            if (sPng) {
+                                const blob = await zip.file(sPng).async('blob');
+                                shadowFile = new File([blob], sName, { type: 'image/png' });
+                            }
+                        } catch(e) {}
+                    }
+                    if (zip.files[shapePath]) {
+                        try {
+                            const sc = JSON.parse(await zip.file(shapePath).async('string'));
+                            const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
+                                ? sc.colorTex.textures[0].texture
+                                : (fileName + '.png');
+                            const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                            if (sPng) {
+                                const blob = await zip.file(sPng).async('blob');
+                                shapeFile = new File([blob], sName, { type: 'image/png' });
+                            }
+                        } catch(e) {}
+                    }
+
+                    // 提取高级参数
+                    const advParams = {};
+                    if (config.colorTex) {
+                        if (config.colorTex.ideal !== undefined) advParams.ideal = config.colorTex.ideal;
+                        if (config.colorTex.border_Bottom) advParams.border_Bottom = config.colorTex.border_Bottom;
+                        if (config.colorTex.border_Top) advParams.border_Top = config.colorTex.border_Top;
+                        if (config.colorTex.center) advParams.center = config.colorTex.center;
+                        if (config.colorTex.fixedWidth !== undefined) advParams.fixedWidth = config.colorTex.fixedWidth;
+                        if (config.colorTex.fixedWidthValue !== undefined) advParams.fixedWidthValue = config.colorTex.fixedWidthValue;
+                        if (config.colorTex.flipToLight_X !== undefined) advParams.flipToLight_X = config.colorTex.flipToLight_X;
+                        if (config.colorTex.flipToLight_Y !== undefined) advParams.flipToLight_Y = config.colorTex.flipToLight_Y;
+                        if (config.colorTex.metalTexture !== undefined) advParams.metalTexture = config.colorTex.metalTexture;
+                    }
+                    if (config.pack_Redstone_Atlas !== undefined) advParams.pack_Redstone_Atlas = config.pack_Redstone_Atlas;
+                    if (config.multiple !== undefined) advParams.multiple = config.multiple;
+
+                    // 提取 segments
+                    const segments = config.segments || [];
+
+                    textures.push({
+                        name: fileName,
+                        displayName: config.name || (fileName + ' unhidden'),
+                        colorFile: colorFile,
+                        shadowFile: shadowFile,
+                        shapeFile: shapeFile,
+                        tags: config.tags || ['tank', 'cone', 'fairing', 'probe'],
+                        resizeW: 0,
+                        resizeH: 0,
+                        originalW: 0,
+                        originalH: 0,
+                        advParams: Object.keys(advParams).length > 0 ? advParams : undefined,
+                        segments: segments.length > 0 ? segments : undefined
+                    });
+                    importedCount++;
+                }
+
+                if (importedCount > 0) {
+                    updateTextureList();
+                    updatePreview();
+                    showToast('已导入 ' + importedCount + ' 个涂装', 'success');
+                    // 如果原包有信息，可以更新一些字段
+                    if (packInfo && packInfo.DisplayName) {
+                        showToast('原包名称: ' + packInfo.DisplayName, 'info');
+                    }
+                } else {
+                    showToast('未能从 ZIP 中解析出任何涂装', 'error');
+                }
+            } catch (err) {
+                showToast('导入失败：' + err.message, 'error');
+                console.error(err);
+            }
+
+            input.value = '';
+        }
+
+        // 涂装排序
+        function moveTexture(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= textures.length) return;
+            [textures[index], textures[newIndex]] = [textures[newIndex], textures[index]];
+            updateTextureList();
+            updatePreview();
         }
 
         function updateTextureList() {
@@ -1376,7 +1768,14 @@
                 let extraInfo = '';
                 if (tex.shadowFile) extraInfo += ' <span style="color:var(--warning)">Shadow</span>';
                 if (tex.shapeFile) extraInfo += ' <span style="color:#888">Shape</span>';
-                if (tex.transparentBg) extraInfo += ' <span style="color:#888">透明底</span>';
+                if (tex.advParams && tex.advParams.metalTexture) extraInfo += ' <span style="color:#aaa">Metal</span>';
+                if (tex.segments && tex.segments.length > 0) extraInfo += ' <span style="color:#aaa">Segments:' + tex.segments.length + '</span>';
+
+                // 排序按钮
+                const isFirst = i === 0;
+                const isLast = i === textures.length - 1;
+                const upBtn = isFirst ? '' : `<button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="moveTexture(${i}, -1)">&#9650;</button>`;
+                const downBtn = isLast ? '' : `<button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="moveTexture(${i}, 1)">&#9660;</button>`;
 
                 return `
                     <div class="texture-item">
@@ -1387,6 +1786,7 @@
                                 ${sizeInfo ? `<div class="texture-size-info">${sizeInfo}</div>` : ''}
                             </div>
                             <div style="display:flex; gap:6px; flex-shrink:0;">
+                                ${upBtn}${downBtn}
                                 <button class="btn btn-secondary" onclick="openTextureModal(${i})">编辑</button>
                                 <button class="btn btn-danger" onclick="deleteTexture(${i})">删除</button>
                             </div>
@@ -1483,28 +1883,37 @@
             for (const tex of textures) {
                 const resizeW = tex.resizeW || 0;
                 const resizeH = tex.resizeH || 0;
-                const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH, tex.transparentBg, tex.transparentTolerance);
+                const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH);
+
+                // 使用高级参数（如果有），否则使用默认值
+                const defaultParams = {
+                    ideal: 0.0,
+                    border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                    border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                    center: { mode: 0, sizeMode: 0, size: 0.5, logoHeightPercent: 0.5, scaleLogoToFit: false },
+                    fixedWidth: false, fixedWidthValue: 1.0,
+                    flipToLight_X: false, flipToLight_Y: false,
+                    metalTexture: false, pack_Redstone_Atlas: false, multiple: false
+                };
+                const ap = Object.assign({}, defaultParams, tex.advParams || {});
 
                 const baseConfig = {
                     colorTex: {
-                        textures: [{ texture: colorFileToUse.name, ideal: 0.0 }],
-                        border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
-                        border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
-                        center: {
-                            mode: 0, sizeMode: 0, size: 0.5,
-                            logoHeightPercent: 0.5, scaleLogoToFit: false
-                        },
-                        fixedWidth: false,
-                        fixedWidthValue: 1.0,
-                        flipToLight_X: false,
-                        flipToLight_Y: false,
-                        metalTexture: false,
+                        textures: [{ texture: colorFileToUse.name, ideal: ap.ideal }],
+                        border_Bottom: ap.border_Bottom,
+                        border_Top: ap.border_Top,
+                        center: ap.center,
+                        fixedWidth: ap.fixedWidth,
+                        fixedWidthValue: ap.fixedWidthValue,
+                        flipToLight_X: ap.flipToLight_X,
+                        flipToLight_Y: ap.flipToLight_Y,
+                        metalTexture: ap.metalTexture,
                         icon: null
                     },
                     tags: tex.tags,
-                    pack_Redstone_Atlas: false,
-                    multiple: false,
-                    segments: [],
+                    pack_Redstone_Atlas: ap.pack_Redstone_Atlas,
+                    multiple: ap.multiple,
+                    segments: tex.segments || [],
                     name: tex.displayName,
                     hideFlags: 0
                 };
