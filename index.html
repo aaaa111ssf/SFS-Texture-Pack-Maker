@@ -670,6 +670,79 @@
             cursor: pointer;
         }
 
+        /* 帮助面板 */
+        .help-card { padding: 16px 24px; }
+        .help-card details summary {
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-card details summary:hover { color: var(--text); }
+        .help-card details summary::before {
+            content: '▸';
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+        .help-card details[open] summary::before {
+            content: '▾';
+        }
+        .help-content {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px dashed var(--border);
+        }
+        .help-content h4 {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin: 16px 0 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .help-content h4:first-child { margin-top: 0; }
+        .help-intro {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .help-note {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .help-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .help-table th {
+            text-align: left;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            color: var(--text);
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+        .help-table td {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .help-table tr:nth-child(even) td {
+            background: var(--bg-card);
+        }
+        .help-table td:first-child {
+            color: var(--text);
+            font-weight: 500;
+            white-space: nowrap;
+            width: 160px;
+        }
+
         @media (max-width: 768px) {
             .grid-2 { grid-template-columns: 1fr; }
             header h1 { font-size: 1.6rem; }
@@ -768,6 +841,55 @@
             <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()">
                 下载涂装包 (ZIP)
             </button>
+        </div>
+
+        <!-- 参数说明 -->
+        <div class="card help-card">
+            <details>
+                <summary>高级参数说明 (点击展开)</summary>
+                <div class="help-content">
+                    <p class="help-intro">以下参数来自 SFS 官方纹理系统，99% 的涂装无需修改，保持默认值即可。</p>
+
+                    <h4>核心缩放</h4>
+                    <table class="help-table">
+                        <tr><th>参数</th><th>说明</th></tr>
+                        <tr><td>ideal</td><td>纹理理想缩放值。0.0 为原始尺寸，控制贴图在零件表面的基准缩放比例。</td></tr>
+                    </table>
+
+                    <h4>Border 边框区域 (顶部 / 底部)</h4>
+                    <table class="help-table">
+                        <tr><th>参数</th><th>说明</th></tr>
+                        <tr><td>sizeMode</td><td>尺寸计算模式。0=Aspect 按宽高比、1=UV 按 UV 坐标、2=Screen 按屏幕像素。</td></tr>
+                        <tr><td>size</td><td>边框区域大小，范围 0~2。</td></tr>
+                        <tr><td>uvSize</td><td>UV 坐标下的边框尺寸，范围 0~1。</td></tr>
+                    </table>
+                    <p class="help-note">顶部和底部边框独立控制，用于让贴图在零件两端保持固定图案（如火箭底部的隔热瓦、顶部的整流罩标志）。</p>
+
+                    <h4>Center 中心区域</h4>
+                    <table class="help-table">
+                        <tr><th>参数</th><th>说明</th></tr>
+                        <tr><td>mode</td><td>填充模式。0=Stretch 拉伸、1=Tile 平铺重复、2=Tile Fit 自适应平铺。</td></tr>
+                        <tr><td>sizeMode</td><td>同 border，尺寸计算模式。</td></tr>
+                        <tr><td>size</td><td>中心区域大小。</td></tr>
+                        <tr><td>logoHeightPercent</td><td>标志/logo 在中心区域的高度占比，0~1。</td></tr>
+                        <tr><td>scaleLogoToFit</td><td>是否自动缩放标志以适配区域。</td></tr>
+                    </table>
+
+                    <h4>其他开关</h4>
+                    <table class="help-table">
+                        <tr><th>参数</th><th>说明</th></tr>
+                        <tr><td>fixedWidth</td><td>固定宽度模式。开启后贴图宽度保持固定，不随零件直径变化而拉伸。</td></tr>
+                        <tr><td>fixedWidthValue</td><td>固定宽度的具体数值。</td></tr>
+                        <tr><td>flipToLight_X / Y</td><td>根据光源方向自动翻转贴图，用于模拟反光效果。</td></tr>
+                        <tr><td>metalTexture</td><td>金属质感开关。开启后游戏会调用金属通道渲染，让贴图呈现金属光泽。</td></tr>
+                        <tr><td>pack_Redstone_Atlas</td><td>红石图集打包模式，用于特定图集格式。</td></tr>
+                        <tr><td>multiple</td><td>多重纹理模式，允许一个涂装引用多张不同贴图。</td></tr>
+                    </table>
+
+                    <h4>Segments 分段系统</h4>
+                    <p class="help-note">将贴图分成多个独立区域（如顶部隔热瓦区 + 中部主体区 + 底部引擎区），每个 segment 可以有自己的贴图和独立的 border/center 配置。属于高级功能，导入已有涂装包时可自动保留。</p>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -1103,6 +1225,7 @@
 
         function openTextureModal(index = -1) {
             document.getElementById('textureModal').classList.add('visible');
+            document.body.style.overflow = 'hidden';
             document.getElementById('editingIndex').value = index;
             document.getElementById('modalTitle').textContent = index === -1 ? '添加涂装' : '编辑涂装';
 
@@ -1215,6 +1338,7 @@
 
         function closeTextureModal() {
             document.getElementById('textureModal').classList.remove('visible');
+            document.body.style.overflow = '';
         }
 
         function renderSegmentsPreview() {
