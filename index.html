@@ -797,7 +797,7 @@
         <!-- 高级选项开关 -->
         <div class="advanced-toggle" onclick="document.getElementById('advancedOptions').classList.toggle('visible');">
             <input type="checkbox" id="advancedCheck" onchange="event.stopPropagation()">
-            <span>显示高级选项 (Shadow / Shape Textures)</span>
+            <span>显示高级选项 (Shadow / Shape / colorTex 高级参数)</span>
         </div>
 
         <!-- 涂装列表 -->
@@ -1303,11 +1303,11 @@
             } else {
                 document.getElementById('texName').value = '';
                 document.getElementById('texDisplayName').value = '';
-                document.getElementById('texColorLabel').textContent = '点击或拖拽上传 PNG 图片 (必须)';
+                document.getElementById('texColorLabel').textContent = '点击或拖拽上传图片 (自动转 PNG)';
                 document.getElementById('texColorLabel').classList.remove('has-file');
-                document.getElementById('texShadowLabel').textContent = '上传 Shadow PNG (可选)';
+                document.getElementById('texShadowLabel').textContent = '上传 Shadow 图片 (自动转 PNG)';
                 document.getElementById('texShadowLabel').classList.remove('has-file');
-                document.getElementById('texShapeLabel').textContent = '上传 Shape PNG (可选)';
+                document.getElementById('texShapeLabel').textContent = '上传 Shape 图片 (自动转 PNG)';
                 document.getElementById('texShapeLabel').classList.remove('has-file');
 
                 const tagContainer = document.getElementById('tagInput');
