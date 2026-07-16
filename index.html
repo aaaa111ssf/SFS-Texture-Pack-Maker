@@ -1979,12 +1979,28 @@
                     return;
                 }
 
-                // 5. 读取 Textures 下的所有图片（精确匹配，不混入 Color/Shadow/Shape Textures）
-                const texturePngs = allPaths.filter(k => {
-                    if (!k.toLowerCase().endsWith('.png')) return false;
+                // 5. 读取 Textures 下的所有图片（支持 png/jpg/jpeg/webp/gif/bmp，精确匹配文件夹）
+                const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
+                const textureImages = allPaths.filter(k => {
+                    const ext = k.substring(k.lastIndexOf('.')).toLowerCase();
+                    if (!imageExtensions.includes(ext)) return false;
                     if (!texturesPath) return false;
                     return k.toLowerCase().startsWith(texturesPath.toLowerCase());
                 });
+
+                // 将 ZIP 中的图片 blob 转为 PNG File
+                async function zipImageToPNG(zip, zipPath) {
+                    const blob = await zip.file(zipPath).async('blob');
+                    const origName = zipPath.split('/').pop();
+                    const pngName = origName.replace(/\.[^.]+$/, '.png');
+                    // 已经是 PNG 直接返回
+                    if (origName.toLowerCase().endsWith('.png')) {
+                        return new File([blob], pngName, { type: 'image/png' });
+                    }
+                    // 非 PNG 需要转换
+                    const file = new File([blob], origName, { type: blob.type || 'image/jpeg' });
+                    return await convertToPNG(file);
+                }
 
                 let importedCount = 0;
 
@@ -1997,31 +2013,32 @@
                     const fileName = txtPath.split('/').pop().replace(/\.txt$/i, '');
 
                     // 从 colorTex.textures[0].texture 获取图片文件名
-                    const pngName = config.colorTex && config.colorTex.textures && config.colorTex.textures[0]
+                    const texName = config.colorTex && config.colorTex.textures && config.colorTex.textures[0]
                         ? config.colorTex.textures[0].texture
                         : (fileName + '.png');
 
-                    // 在 Textures/ 下查找对应的 PNG
+                    // 在 Textures/ 下查找对应的图片
                     let colorFile = null;
-                    const pngPath = texturePngs.find(p => p.toLowerCase().endsWith('/' + pngName.toLowerCase()));
-                    if (pngPath) {
-                        const pngBlob = await zip.file(pngPath).async('blob');
-                        colorFile = new File([pngBlob], pngName, { type: 'image/png' });
+                    // 先按配置文件中的文件名精确匹配
+                    const imgPath = textureImages.find(p => {
+                        const fn = p.split('/').pop();
+                        return fn.toLowerCase() === texName.toLowerCase();
+                    });
+                    if (imgPath) {
+                        colorFile = await zipImageToPNG(zip, imgPath);
                     } else {
-                        // 尝试通过文件名匹配
-                        const altPngPath = texturePngs.find(p => {
-                            const fn = p.split('/').pop().toLowerCase().replace(/\.png$/, '');
+                        // 再按涂装名匹配（忽略扩展名）
+                        const altImgPath = textureImages.find(p => {
+                            const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
                             return fn === fileName.toLowerCase();
                         });
-                        if (altPngPath) {
-                            const pngBlob = await zip.file(altPngPath).async('blob');
-                            const altName = altPngPath.split('/').pop();
-                            colorFile = new File([pngBlob], altName, { type: 'image/png' });
+                        if (altImgPath) {
+                            colorFile = await zipImageToPNG(zip, altImgPath);
                         }
                     }
 
                     if (!colorFile) {
-                        console.warn('未找到涂装图片:', fileName, pngName);
+                        console.warn('未找到涂装图片:', fileName, texName);
                         continue;
                     }
 
@@ -2040,10 +2057,18 @@
                                 const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
                                     ? sc.colorTex.textures[0].texture
                                     : (fileName + '.png');
-                                const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                                const sPng = textureImages.find(p => {
+                                    const fn = p.split('/').pop();
+                                    return fn.toLowerCase() === sName.toLowerCase();
+                                });
                                 if (sPng) {
-                                    const blob = await zip.file(sPng).async('blob');
-                                    shadowFile = new File([blob], sName, { type: 'image/png' });
+                                    shadowFile = await zipImageToPNG(zip, sPng);
+                                } else {
+                                    const sAlt = textureImages.find(p => {
+                                        const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
+                                        return fn === fileName.toLowerCase();
+                                    });
+                                    if (sAlt) shadowFile = await zipImageToPNG(zip, sAlt);
                                 }
                             } catch(e) {}
                         }
@@ -2058,10 +2083,18 @@
                                 const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
                                     ? sc.colorTex.textures[0].texture
                                     : (fileName + '.png');
-                                const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                                const sPng = textureImages.find(p => {
+                                    const fn = p.split('/').pop();
+                                    return fn.toLowerCase() === sName.toLowerCase();
+                                });
                                 if (sPng) {
-                                    const blob = await zip.file(sPng).async('blob');
-                                    shapeFile = new File([blob], sName, { type: 'image/png' });
+                                    shapeFile = await zipImageToPNG(zip, sPng);
+                                } else {
+                                    const sAlt = textureImages.find(p => {
+                                        const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
+                                        return fn === fileName.toLowerCase();
+                                    });
+                                    if (sAlt) shapeFile = await zipImageToPNG(zip, sAlt);
                                 }
                             } catch(e) {}
                         }
