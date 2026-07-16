@@ -1928,25 +1928,49 @@
 
             try {
                 const zip = await JSZip.loadAsync(file);
-                const root = Object.keys(zip.files).find(k => !k.includes('/') || k.endsWith('/'));
-                // 获取第一层文件夹名（可能没有）
-                const folders = Object.keys(zip.files).filter(k => k.endsWith('/') && k.split('/').length <= 3);
-                let packRoot = '';
-                if (folders.length > 0) {
-                    packRoot = folders[0]; // 通常是 "packname/"
+                const allPaths = Object.keys(zip.files);
+                const folders = allPaths.filter(k => k.endsWith('/'));
+
+                // 1. 通过 pack_info.txt 位置确定根前缀
+                let rootPrefix = '';
+                const packInfoPath = allPaths.find(k => k.toLowerCase().endsWith('pack_info.txt'));
+                if (packInfoPath) {
+                    const lastSlash = packInfoPath.lastIndexOf('/');
+                    rootPrefix = lastSlash >= 0 ? packInfoPath.substring(0, lastSlash + 1) : '';
                 }
 
-                // 查找 pack_info.txt
-                let packInfoPath = Object.keys(zip.files).find(k => k.toLowerCase().endsWith('pack_info.txt'));
+                // 2. 查找根下的各个文件夹（支持大小写不敏感、空格差异）
+                function getFolderPath(nameVariants) {
+                    for (const folder of folders) {
+                        if (!folder.toLowerCase().startsWith(rootPrefix.toLowerCase())) continue;
+                        const relative = folder.substring(rootPrefix.length).replace(/\/$/, '');
+                        const relativeNoSpace = relative.toLowerCase().replace(/\s+/g, '');
+                        for (const v of nameVariants) {
+                            if (relativeNoSpace === v.toLowerCase().replace(/\s+/g, '')) {
+                                return folder; // 返回完整路径如 "MyPack/Color Textures/"
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                const colorTexturesPath = getFolderPath(['Color Textures', 'ColorTextures']);
+                const texturesPath = getFolderPath(['Textures']);
+                const shadowTexturesPath = getFolderPath(['Shadow Textures', 'ShadowTextures']);
+                const shapeTexturesPath = getFolderPath(['Shape Textures', 'ShapeTextures']);
+
+                // 3. 读取 pack_info.txt
                 let packInfo = null;
                 if (packInfoPath) {
                     const content = await zip.file(packInfoPath).async('string');
                     try { packInfo = JSON.parse(content); } catch(e) {}
                 }
 
-                // 读取 Color Textures/ 下的所有 .txt 配置文件
-                const colorTxtFiles = Object.keys(zip.files).filter(k => {
-                    return k.toLowerCase().includes('color textures/') && k.toLowerCase().endsWith('.txt');
+                // 4. 读取 Color Textures 下的 .txt 配置文件
+                const colorTxtFiles = allPaths.filter(k => {
+                    if (!k.toLowerCase().endsWith('.txt')) return false;
+                    if (!colorTexturesPath) return false;
+                    return k.toLowerCase().startsWith(colorTexturesPath.toLowerCase());
                 });
 
                 if (colorTxtFiles.length === 0) {
@@ -1955,9 +1979,11 @@
                     return;
                 }
 
-                // 读取 Textures/ 下的所有图片
-                const texturePngs = Object.keys(zip.files).filter(k => {
-                    return k.toLowerCase().includes('textures/') && k.toLowerCase().endsWith('.png');
+                // 5. 读取 Textures 下的所有图片（精确匹配，不混入 Color/Shadow/Shape Textures）
+                const texturePngs = allPaths.filter(k => {
+                    if (!k.toLowerCase().endsWith('.png')) return false;
+                    if (!texturesPath) return false;
+                    return k.toLowerCase().startsWith(texturesPath.toLowerCase());
                 });
 
                 let importedCount = 0;
@@ -1976,9 +2002,8 @@
                         : (fileName + '.png');
 
                     // 在 Textures/ 下查找对应的 PNG
-                    const pngPath = texturePngs.find(p => p.toLowerCase().endsWith('/' + pngName.toLowerCase()));
-
                     let colorFile = null;
+                    const pngPath = texturePngs.find(p => p.toLowerCase().endsWith('/' + pngName.toLowerCase()));
                     if (pngPath) {
                         const pngBlob = await zip.file(pngPath).async('blob');
                         colorFile = new File([pngBlob], pngName, { type: 'image/png' });
@@ -2001,36 +2026,45 @@
                     }
 
                     // 读取 Shadow 和 Shape（如果有）
-                    const shadowPath = txtPath.replace(/color textures/i, 'Shadow Textures');
-                    const shapePath = txtPath.replace(/color textures/i, 'Shape Textures');
                     let shadowFile = null, shapeFile = null;
 
-                    // 从 shadow/shape 配置中提取图片名
-                    if (zip.files[shadowPath]) {
-                        try {
-                            const sc = JSON.parse(await zip.file(shadowPath).async('string'));
-                            const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
-                                ? sc.colorTex.textures[0].texture
-                                : (fileName + '.png');
-                            const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
-                            if (sPng) {
-                                const blob = await zip.file(sPng).async('blob');
-                                shadowFile = new File([blob], sName, { type: 'image/png' });
-                            }
-                        } catch(e) {}
+                    // 从 txtPath 提取相对于 Color Textures 的路径，如 "xxx.txt"
+                    const relativePath = txtPath.substring(colorTexturesPath.length);
+
+                    // Shadow 配置文件路径
+                    if (shadowTexturesPath) {
+                        const shadowTxtPath = shadowTexturesPath + relativePath;
+                        if (zip.files[shadowTxtPath]) {
+                            try {
+                                const sc = JSON.parse(await zip.file(shadowTxtPath).async('string'));
+                                const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
+                                    ? sc.colorTex.textures[0].texture
+                                    : (fileName + '.png');
+                                const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                                if (sPng) {
+                                    const blob = await zip.file(sPng).async('blob');
+                                    shadowFile = new File([blob], sName, { type: 'image/png' });
+                                }
+                            } catch(e) {}
+                        }
                     }
-                    if (zip.files[shapePath]) {
-                        try {
-                            const sc = JSON.parse(await zip.file(shapePath).async('string'));
-                            const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
-                                ? sc.colorTex.textures[0].texture
-                                : (fileName + '.png');
-                            const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
-                            if (sPng) {
-                                const blob = await zip.file(sPng).async('blob');
-                                shapeFile = new File([blob], sName, { type: 'image/png' });
-                            }
-                        } catch(e) {}
+
+                    // Shape 配置文件路径
+                    if (shapeTexturesPath) {
+                        const shapeTxtPath = shapeTexturesPath + relativePath;
+                        if (zip.files[shapeTxtPath]) {
+                            try {
+                                const sc = JSON.parse(await zip.file(shapeTxtPath).async('string'));
+                                const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
+                                    ? sc.colorTex.textures[0].texture
+                                    : (fileName + '.png');
+                                const sPng = texturePngs.find(p => p.toLowerCase().endsWith('/' + sName.toLowerCase()));
+                                if (sPng) {
+                                    const blob = await zip.file(sPng).async('blob');
+                                    shapeFile = new File([blob], sName, { type: 'image/png' });
+                                }
+                            } catch(e) {}
+                        }
                     }
 
                     // 提取高级参数
