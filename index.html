@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -828,44 +827,80 @@
             .toast { max-width: 90vw; font-size: 0.85rem; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; right: auto; transform: translate(-50%, 100px); }
             .toast.show { transform: translate(-50%, 0); opacity: 1; }
         }
+
+        .lang-switcher {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 1500;
+        }
+
+        .lang-switcher select {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 26px;
+        }
+
+        .lang-switcher select:hover { border-color: #fff; }
+
+        @media (max-width: 768px) {
+            .lang-switcher select { font-size: 16px; padding: 8px 28px 8px 10px; }
+        }
     </style>
 </head>
 <body>
+    <div class="lang-switcher">
+        <select id="langSelect" onchange="switchLanguage(this.value)">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+        </select>
+    </div>
     <header>
-        <h1>SFS Texture Pack Maker</h1>
+        <h1 data-i18n="title">SFS Texture Pack Maker</h1>
         <p style="font-size:0.82rem; color:var(--text-dim); margin:4px 0 6px;">by A Future Star</p>
-        <p>Spaceflight Simulator 涂装包可视化制作工具</p>
-        <p style="margin-top:10px;"><a href="https://qm.qq.com/q/gl6B1BhcAM" target="_blank" rel="noopener" class="qq-group-link">加入我们</a></p>
+        <p data-i18n="subtitle">Spaceflight Simulator 涂装包可视化制作工具</p>
+        <p style="margin-top:10px;"><a href="https://qm.qq.com/q/gl6B1BhcAM" target="_blank" rel="noopener" class="qq-group-link" data-i18n="joinUs">加入我们</a></p>
     </header>
 
     <div class="container">
         <!-- 包信息 -->
         <div class="card">
-            <h2><span class="icon">[</span> 包信息</h2>
+            <h2><span class="icon">[</span> <span data-i18n="packInfo">包信息</span></h2>
             <div class="grid-2">
                 <div class="form-group">
-                    <label>显示名称 *</label>
-                    <input type="text" id="packName" placeholder="例如：中国航天贴图包" value="贴图包">
+                    <label data-i18n="displayName">显示名称 *</label>
+                    <input type="text" id="packName" data-i18n-ph="phPackName" placeholder="例如：中国航天贴图包" value="贴图包">
                 </div>
                 <div class="form-group">
-                    <label>版本</label>
+                    <label data-i18n="version">版本</label>
                     <input type="text" id="packVersion" placeholder="例如：1.0.0" value="1.0.0">
                 </div>
             </div>
             <div class="form-group">
-                <label>描述</label>
-                <textarea id="packDesc" placeholder="描述你的涂装包..."></textarea>
+                <label data-i18n="description">描述</label>
+                <textarea id="packDesc" data-i18n-ph="phDescription" placeholder="描述你的涂装包..."></textarea>
             </div>
             <div class="grid-2">
                 <div class="form-group">
-                    <label>作者</label>
-                    <input type="text" id="packAuthor" placeholder="作者名称">
+                    <label data-i18n="author">作者</label>
+                    <input type="text" id="packAuthor" data-i18n-ph="phAuthor" placeholder="作者名称">
                 </div>
                 <div class="form-group">
-                    <label>包图标 (自动转 PNG，可选)</label>
+                    <label data-i18n="packIcon">包图标 (自动转 PNG，可选)</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="packIcon" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp">
-                        <div class="file-input-label" id="packIconLabel">
+                        <div class="file-input-label" id="packIconLabel" data-i18n="uploadIconAuto">
                             点击或拖拽上传图标 (自动转 PNG)
                         </div>
                     </div>
@@ -877,13 +912,13 @@
         <!-- 高级选项开关 -->
         <div class="advanced-toggle" onclick="document.getElementById('advancedOptions').classList.toggle('visible');">
             <input type="checkbox" id="advancedCheck" onchange="event.stopPropagation()">
-            <span>显示高级选项 (Shadow / Shape / colorTex 高级参数)</span>
+            <span data-i18n="showAdvanced">显示高级选项 (Shadow / Shape / colorTex 高级参数)</span>
         </div>
 
         <!-- 涂装列表 -->
         <div class="card">
             <div class="toolbar">
-                <h2><span class="icon">[</span> 涂装列表</h2>
+                <h2><span class="icon">[</span> <span data-i18n="textureList">涂装列表</span></h2>
                 <div class="stats">
                     <span id="textureCount">0 个涂装</span>
                 </div>
@@ -891,19 +926,19 @@
 
             <div id="textureList">
                 <div class="empty-state">
-                    <p>还没有添加涂装，点击下方按钮添加</p>
+                    <p data-i18n="emptyTextures">还没有添加涂装，点击下方按钮添加</p>
                 </div>
             </div>
 
             <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="openTextureModal()">
+                <button class="btn btn-primary" onclick="openTextureModal()" data-i18n="addTexture">
                     + 添加涂装
                 </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('batchImportInput').click();">
+                <button class="btn btn-secondary" onclick="document.getElementById('batchImportInput').click();" data-i18n="batchImport">
                     批量导入图片
                 </button>
-                <input type="file" id="batchImportInput" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" multiple style="display:none" onchange="handleBatchImport(this)">
-                <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();">
+                <input type="file" id="batchImportInput" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" multiple="" style="display:none" onchange="handleBatchImport(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();" data-i18n="importPack">
                     导入涂装包
                 </button>
                 <input type="file" id="importPackInput" accept=".zip" style="display:none" onchange="handleImportPack(this)">
@@ -912,13 +947,13 @@
 
         <!-- 预览 -->
         <div class="card">
-            <h2><span class="icon">[</span> 文件结构预览</h2>
+            <h2><span class="icon">[</span> <span data-i18n="filePreview">文件结构预览</span></h2>
             <div class="preview-section" id="filePreview"></div>
         </div>
 
         <!-- 操作按钮 -->
         <div style="text-align: center; margin: 40px 0;">
-            <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()">
+            <button class="btn btn-success" style="font-size: 1.05rem; padding: 14px 36px;" onclick="generatePack()" data-i18n="downloadPack">
                 下载涂装包 (ZIP)
             </button>
         </div>
@@ -926,48 +961,48 @@
         <!-- 参数说明 -->
         <div class="card help-card">
             <details>
-                <summary>高级参数说明 (点击展开)</summary>
+                <summary data-i18n="advParamHelp">高级参数说明 (点击展开)</summary>
                 <div class="help-content">
-                    <p class="help-intro">以下参数来自 SFS 官方纹理系统，99% 的涂装无需修改，保持默认值即可。</p>
+                    <p class="help-intro" data-i18n="helpIntro">以下参数来自 SFS 官方纹理系统，99% 的涂装无需修改，保持默认值即可。</p>
 
-                    <h4>核心缩放</h4>
+                    <h4 data-i18n="helpCoreScaling">核心缩放</h4>
                     <table class="help-table">
-                        <tr><th>参数</th><th>说明</th></tr>
-                        <tr><td>ideal</td><td>纹理理想缩放值。0.0 为原始尺寸，控制贴图在零件表面的基准缩放比例。</td></tr>
-                    </table>
+                        <tbody><tr><th data-i18n="helpParam">参数</th><th data-i18n="helpDesc">说明</th></tr>
+                        <tr><td>ideal</td><td data-i18n="helpIdeal">纹理理想缩放值。0.0 为原始尺寸，控制贴图在零件表面的基准缩放比例。</td></tr>
+                    </tbody></table>
 
-                    <h4>Border 边框区域 (顶部 / 底部)</h4>
+                    <h4 data-i18n="helpBorder">Border 边框区域 (顶部 / 底部)</h4>
                     <table class="help-table">
-                        <tr><th>参数</th><th>说明</th></tr>
-                        <tr><td>sizeMode</td><td>尺寸计算模式。0=Aspect 按宽高比、1=UV 按 UV 坐标、2=Screen 按屏幕像素。</td></tr>
-                        <tr><td>size</td><td>边框区域大小，范围 0~2。</td></tr>
-                        <tr><td>uvSize</td><td>UV 坐标下的边框尺寸，范围 0~1。</td></tr>
-                    </table>
-                    <p class="help-note">顶部和底部边框独立控制，用于让贴图在零件两端保持固定图案（如火箭底部的隔热瓦、顶部的整流罩标志）。</p>
+                        <tbody><tr><th data-i18n="helpParam">参数</th><th data-i18n="helpDesc">说明</th></tr>
+                        <tr><td>sizeMode</td><td data-i18n="helpSizeMode">尺寸计算模式。0=Aspect 按宽高比、1=UV 按 UV 坐标、2=Screen 按屏幕像素。</td></tr>
+                        <tr><td>size</td><td data-i18n="helpSize">边框区域大小，范围 0~2。</td></tr>
+                        <tr><td>uvSize</td><td data-i18n="helpUvSize">UV 坐标下的边框尺寸，范围 0~1。</td></tr>
+                    </tbody></table>
+                    <p class="help-note" data-i18n="helpBorderNote">顶部和底部边框独立控制，用于让贴图在零件两端保持固定图案（如火箭底部的隔热瓦、顶部的整流罩标志）。</p>
 
-                    <h4>Center 中心区域</h4>
+                    <h4 data-i18n="helpCenter">Center 中心区域</h4>
                     <table class="help-table">
-                        <tr><th>参数</th><th>说明</th></tr>
-                        <tr><td>mode</td><td>填充模式。0=Stretch 拉伸、1=Tile 平铺重复、2=Tile Fit 自适应平铺。</td></tr>
-                        <tr><td>sizeMode</td><td>同 border，尺寸计算模式。</td></tr>
-                        <tr><td>size</td><td>中心区域大小。</td></tr>
-                        <tr><td>logoHeightPercent</td><td>标志/logo 在中心区域的高度占比，0~1。</td></tr>
-                        <tr><td>scaleLogoToFit</td><td>是否自动缩放标志以适配区域。</td></tr>
-                    </table>
+                        <tbody><tr><th data-i18n="helpParam">参数</th><th data-i18n="helpDesc">说明</th></tr>
+                        <tr><td>mode</td><td data-i18n="helpMode">填充模式。0=Stretch 拉伸、1=Tile 平铺重复、2=Tile Fit 自适应平铺。</td></tr>
+                        <tr><td>sizeMode</td><td data-i18n="helpSizeMode">尺寸计算模式。0=Aspect 按宽高比、1=UV 按 UV 坐标、2=Screen 按屏幕像素。</td></tr>
+                        <tr><td>size</td><td data-i18n="helpCenterSize">中心区域大小。</td></tr>
+                        <tr><td>logoHeightPercent</td><td data-i18n="helpLogoHeight">标志/logo 在中心区域的高度占比，0~1。</td></tr>
+                        <tr><td>scaleLogoToFit</td><td data-i18n="helpScaleLogo">是否自动缩放标志以适配区域。</td></tr>
+                    </tbody></table>
 
-                    <h4>其他开关</h4>
+                    <h4 data-i18n="helpOtherSwitches">其他开关</h4>
                     <table class="help-table">
-                        <tr><th>参数</th><th>说明</th></tr>
-                        <tr><td>fixedWidth</td><td>固定宽度模式。开启后贴图宽度保持固定，不随零件直径变化而拉伸。</td></tr>
-                        <tr><td>fixedWidthValue</td><td>固定宽度的具体数值。</td></tr>
-                        <tr><td>flipToLight_X / Y</td><td>根据光源方向自动翻转贴图，用于模拟反光效果。</td></tr>
-                        <tr><td>metalTexture</td><td>金属质感开关。开启后游戏会调用金属通道渲染，让贴图呈现金属光泽。</td></tr>
-                        <tr><td>pack_Redstone_Atlas</td><td>红石图集打包模式，用于特定图集格式。</td></tr>
-                        <tr><td>multiple</td><td>多重纹理模式，允许一个涂装引用多张不同贴图。</td></tr>
-                    </table>
+                        <tbody><tr><th data-i18n="helpParam">参数</th><th data-i18n="helpDesc">说明</th></tr>
+                        <tr><td>fixedWidth</td><td data-i18n="helpFixedWidth">固定宽度模式。开启后贴图宽度保持固定，不随零件直径变化而拉伸。</td></tr>
+                        <tr><td>fixedWidthValue</td><td data-i18n="helpFixedWidthValue">固定宽度的具体数值。</td></tr>
+                        <tr><td>flipToLight_X / Y</td><td data-i18n="helpFlipToLight">根据光源方向自动翻转贴图，用于模拟反光效果。</td></tr>
+                        <tr><td>metalTexture</td><td data-i18n="helpMetalTexture">金属质感开关。开启后游戏会调用金属通道渲染，让贴图呈现金属光泽。</td></tr>
+                        <tr><td>pack_Redstone_Atlas</td><td data-i18n="helpRedstone">红石图集打包模式，用于特定图集格式。</td></tr>
+                        <tr><td>multiple</td><td data-i18n="helpMultiple">多重纹理模式，允许一个涂装引用多张不同贴图。</td></tr>
+                    </tbody></table>
 
-                    <h4>Segments 分段系统</h4>
-                    <p class="help-note">将贴图分成多个独立区域（如顶部隔热瓦区 + 中部主体区 + 底部引擎区），每个 segment 可以有自己的贴图和独立的 border/center 配置。属于高级功能，导入已有涂装包时可自动保留。</p>
+                    <h4 data-i18n="helpSegments">Segments 分段系统</h4>
+                    <p class="help-note" data-i18n="helpSegmentsNote">将贴图分成多个独立区域（如顶部隔热瓦区 + 中部主体区 + 底部引擎区），每个 segment 可以有自己的贴图和独立的 border/center 配置。属于高级功能，导入已有涂装包时可自动保留。</p>
                 </div>
             </details>
         </div>
@@ -976,25 +1011,25 @@
     <!-- 添加/编辑涂装模态框 -->
     <div class="modal-overlay" id="textureModal">
         <div class="modal">
-            <h3 id="modalTitle">添加涂装</h3>
+            <h3 id="modalTitle" data-i18n="addTextureTitle">添加涂装</h3>
             <input type="hidden" id="editingIndex" value="-1">
 
             <div class="form-group">
-                <label>涂装名称 *</label>
+                <label data-i18n="textureName">涂装名称 *</label>
                 <input type="text" id="texName" placeholder="例如：CN, FG, RS-25">
-                <div class="help-text">此名称将作为配置文件的文件名</div>
+                <div class="help-text" data-i18n="textureNameHelp">此名称将作为配置文件的文件名</div>
             </div>
 
             <div class="form-group">
-                <label>显示名称 (可选，留空自动生成)</label>
-                <input type="text" id="texDisplayName" placeholder="游戏中显示的涂装名称">
+                <label data-i18n="texDisplayName">显示名称 (可选，留空自动生成)</label>
+                <input type="text" id="texDisplayName" data-i18n-ph="phTexDisplayName" placeholder="游戏中显示的涂装名称">
             </div>
 
             <div class="form-group">
-                <label>Color Texture 图片 * <span class="original-dim" id="colorOrigDim"></span></label>
+                <label><span data-i18n="colorTextureLabel">Color Texture 图片 *</span> <span class="original-dim" id="colorOrigDim"></span></label>
                 <div class="file-input-wrapper">
                     <input type="file" id="texColorFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'color')">
-                    <div class="file-input-label" id="texColorLabel">
+                    <div class="file-input-label" id="texColorLabel" data-i18n="uploadImgAuto">
                         点击或拖拽上传图片 (自动转 PNG)
                     </div>
                 </div>
@@ -1003,40 +1038,40 @@
             <!-- 尺寸调节 -->
             <div class="resize-section" id="resizeSection" style="display:none;">
                 <div class="resize-row">
-                    <label>宽度</label>
+                    <label data-i18n="width">宽度</label>
                     <input type="number" id="resizeW" min="1" max="8192" placeholder="宽" oninput="onResizeInput('w')">
                     <span class="dim-sep">x</span>
-                    <label>高度</label>
+                    <label data-i18n="height">高度</label>
                     <input type="number" id="resizeH" min="1" max="8192" placeholder="高" oninput="onResizeInput('h')">
-                    <button class="link-btn" id="lockRatioBtn" onclick="toggleLockRatio()" title="锁定/解锁宽高比">&#128274; 锁定比例</button>
+                    <button class="link-btn" id="lockRatioBtn" onclick="toggleLockRatio()" title="锁定/解锁宽高比">🔒 <span data-i18n="lockRatio">锁定比例</span></button>
                 </div>
                 <div class="resize-row">
-                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="resetSize()">重置为原始尺寸</button>
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="resetSize()" data-i18n="resetSize">重置为原始尺寸</button>
                     <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="doubleSize()">x2</button>
                     <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="halfSize()">x0.5</button>
-                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="powerOf2Size()">2 的幂</button>
+                    <button class="btn btn-secondary" style="padding:4px 12px; font-size:0.8rem;" onclick="powerOf2Size()" data-i18n="powerOf2">2 的幂</button>
                 </div>
-                <div class="resize-hint">留空或填 0 则不调整尺寸，直接使用原图</div>
+                <div class="resize-hint" data-i18n="resizeHint">留空或填 0 则不调整尺寸，直接使用原图</div>
 
                 <!-- 预设尺寸 -->
                 <div class="preset-section">
-                    <div class="section-label">预设尺寸 (点击应用)</div>
-                    <div class="preset-group-label">旗帜 / 标志</div>
+                    <div class="section-label" data-i18n="presetSizes">预设尺寸 (点击应用)</div>
+                    <div class="preset-group-label" data-i18n="presetFlags">旗帜 / 标志</div>
                     <div class="preset-chips">
                         <span class="preset-chip" onclick="applyPreset(1920,1080)">16:9<span class="preset-dim">1920x1080</span></span>
                         <span class="preset-chip" onclick="applyPreset(1280,720)">720p<span class="preset-dim">1280x720</span></span>
-                        <span class="preset-chip" onclick="applyPreset(3,2)">3:2 国旗通用<span class="preset-dim">按比例</span></span>
-                        <span class="preset-chip" onclick="applyPreset(2,1)">2:1 宽幅<span class="preset-dim">按比例</span></span>
-                        <span class="preset-chip" onclick="applyPreset(900,600)">SFS 常用<span class="preset-dim">900x600</span></span>
+                        <span class="preset-chip" onclick="applyPreset(3,2)"><span data-i18n="preset3to2">3:2 国旗通用</span><span class="preset-dim" data-i18n="byRatio">按比例</span></span>
+                        <span class="preset-chip" onclick="applyPreset(2,1)"><span data-i18n="preset2to1">2:1 宽幅</span><span class="preset-dim" data-i18n="byRatio">按比例</span></span>
+                        <span class="preset-chip" onclick="applyPreset(900,600)"><span data-i18n="presetSFS">SFS 常用</span><span class="preset-dim">900x600</span></span>
                     </div>
-                    <div class="preset-group-label">方形 / 图标</div>
+                    <div class="preset-group-label" data-i18n="presetSquare">方形 / 图标</div>
                     <div class="preset-chips">
                         <span class="preset-chip" onclick="applyPreset(512,512)">512x512</span>
                         <span class="preset-chip" onclick="applyPreset(256,256)">256x256</span>
                         <span class="preset-chip" onclick="applyPreset(128,128)">128x128</span>
                         <span class="preset-chip" onclick="applyPreset(64,64)">64x64</span>
                     </div>
-                    <div class="preset-group-label">SFS 贴图 (2 的幂)</div>
+                    <div class="preset-group-label" data-i18n="presetPow2">SFS 贴图 (2 的幂)</div>
                     <div class="preset-chips">
                         <span class="preset-chip" onclick="applyPreset(2048,2048)">2048x2048</span>
                         <span class="preset-chip" onclick="applyPreset(2048,1024)">2048x1024</span>
@@ -1046,13 +1081,13 @@
                         <span class="preset-chip" onclick="applyPreset(512,256)">512x256</span>
                         <span class="preset-chip" onclick="applyPreset(256,128)">256x128</span>
                     </div>
-                    <div class="preset-group-label">SFS 部件推荐</div>
+                    <div class="preset-group-label" data-i18n="presetParts">SFS 部件推荐</div>
                     <div class="preset-chips">
-                        <span class="preset-chip" onclick="applyPreset(64,512)">机身<span class="preset-dim">64x512</span></span>
-                        <span class="preset-chip" onclick="applyPreset(128,1024)">火箭体<span class="preset-dim">128x1024</span></span>
-                        <span class="preset-chip" onclick="applyPreset(256,256)">整流罩<span class="preset-dim">256x256</span></span>
-                        <span class="preset-chip" onclick="applyPreset(128,128)">引擎<span class="preset-dim">128x128</span></span>
-                        <span class="preset-chip" onclick="applyPreset(64,128)">小部件<span class="preset-dim">64x128</span></span>
+                        <span class="preset-chip" onclick="applyPreset(64,512)"><span data-i18n="partBody">机身</span><span class="preset-dim">64x512</span></span>
+                        <span class="preset-chip" onclick="applyPreset(128,1024)"><span data-i18n="partRocket">火箭体</span><span class="preset-dim">128x1024</span></span>
+                        <span class="preset-chip" onclick="applyPreset(256,256)"><span data-i18n="partFairing">整流罩</span><span class="preset-dim">256x256</span></span>
+                        <span class="preset-chip" onclick="applyPreset(128,128)"><span data-i18n="partEngine">引擎</span><span class="preset-dim">128x128</span></span>
+                        <span class="preset-chip" onclick="applyPreset(64,128)"><span data-i18n="partSmall">小部件</span><span class="preset-dim">64x128</span></span>
                     </div>
                 </div>
             </div>
@@ -1064,21 +1099,21 @@
             </div>
 
             <div id="advancedOptions" class="advanced-section">
-                <h4 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem;">高级选项</h4>
+                <h4 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem;" data-i18n="advancedOptions">高级选项</h4>
 
                 <div class="form-group">
-                    <label>标签 (Tags)</label>
+                    <label data-i18n="tags">标签 (Tags)</label>
                     <div class="tag-input" id="tagInput">
-                        <span class="tag">tank <button onclick="removeTag(this)">&times;</button></span>
-                        <span class="tag">cone <button onclick="removeTag(this)">&times;</button></span>
-                        <span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span>
-                        <input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">
+                        <span class="tag">tank <button onclick="removeTag(this)">×</button></span>
+                        <span class="tag">cone <button onclick="removeTag(this)">×</button></span>
+                        <span class="tag">fairing <button onclick="removeTag(this)">×</button></span>
+                        <input type="text" data-i18n-ph="phTagInput" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">
                     </div>
                 </div>
 
                 <!-- colorTex 高级参数 -->
                 <div class="adv-param-toggle" onclick="document.getElementById('advParamPanel').classList.toggle('visible');">
-                    <span>&#9654;</span> colorTex 高级参数 (通常无需修改)
+                    <span>▶</span> <span data-i18n="colorTexAdvParams">colorTex 高级参数 (通常无需修改)</span>
                 </div>
                 <div class="adv-param-panel" id="advParamPanel">
                     <div class="adv-param-grid">
@@ -1089,7 +1124,7 @@
                         <div class="form-group">
                             <label>border_Bottom: sizeMode</label>
                             <select id="adv_borderBottom_sizeMode">
-                                <option value="0" selected>0 - Aspect</option>
+                                <option value="0" selected="">0 - Aspect</option>
                                 <option value="1">1 - UV</option>
                                 <option value="2">2 - Screen</option>
                             </select>
@@ -1105,7 +1140,7 @@
                         <div class="form-group">
                             <label>border_Top: sizeMode</label>
                             <select id="adv_borderTop_sizeMode">
-                                <option value="0" selected>0 - Aspect</option>
+                                <option value="0" selected="">0 - Aspect</option>
                                 <option value="1">1 - UV</option>
                                 <option value="2">2 - Screen</option>
                             </select>
@@ -1121,7 +1156,7 @@
                         <div class="form-group">
                             <label>center: mode</label>
                             <select id="adv_center_mode">
-                                <option value="0" selected>0 - Stretch</option>
+                                <option value="0" selected="">0 - Stretch</option>
                                 <option value="1">1 - Tile</option>
                                 <option value="2">2 - Tile Fit</option>
                             </select>
@@ -1129,7 +1164,7 @@
                         <div class="form-group">
                             <label>center: sizeMode</label>
                             <select id="adv_center_sizeMode">
-                                <option value="0" selected>0 - Aspect</option>
+                                <option value="0" selected="">0 - Aspect</option>
                                 <option value="1">1 - UV</option>
                                 <option value="2">2 - Screen</option>
                             </select>
@@ -1177,28 +1212,28 @@
                     </div>
                     <div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);">
                         <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:6px;">
-                            Segments 分段 <span style="font-size:0.7rem;">(导入时保留，暂不支持编辑)</span>
+                            <span data-i18n="segmentsLabel">Segments 分段</span> <span style="font-size:0.7rem;" data-i18n="segmentsNote">(导入时保留，暂不支持编辑)</span>
                         </div>
-                        <div id="segmentsPreview" style="font-size:0.78rem; color:var(--text-dim);">无</div>
+                        <div id="segmentsPreview" style="font-size:0.78rem; color:var(--text-dim);" data-i18n="none">无</div>
                     </div>
                 </div>
 
                 <div class="shadow-shape-section">
                     <div class="form-group">
-                        <label>Shadow Texture 图片 (可选)</label>
+                        <label data-i18n="shadowTexture">Shadow Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="texShadowFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shadow')">
-                            <div class="file-input-label" id="texShadowLabel">
+                            <div class="file-input-label" id="texShadowLabel" data-i18n="uploadShadowAuto">
                                 上传 Shadow 图片 (自动转 PNG)
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Shape Texture 图片 (可选)</label>
+                        <label data-i18n="shapeTexture">Shape Texture 图片 (可选)</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="texShapeFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shape')">
-                            <div class="file-input-label" id="texShapeLabel">
+                            <div class="file-input-label" id="texShapeLabel" data-i18n="uploadShapeAuto">
                                 上传 Shape 图片 (自动转 PNG)
                             </div>
                         </div>
@@ -1207,8 +1242,8 @@
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeTextureModal()">取消</button>
-                <button class="btn btn-primary" onclick="saveTexture()">保存</button>
+                <button class="btn btn-secondary" onclick="closeTextureModal()" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="saveTexture()" data-i18n="save">保存</button>
             </div>
         </div>
     </div>
@@ -1217,6 +1252,259 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ===== 国际化系统 =====
+        const i18n = {
+            zh: {
+                title: 'SFS Texture Pack Maker',
+                subtitle: 'Spaceflight Simulator 涂装包可视化制作工具',
+                joinUs: '加入我们',
+                packInfo: '包信息',
+                displayName: '显示名称 *',
+                phPackName: '例如：中国航天贴图包',
+                version: '版本',
+                description: '描述',
+                phDescription: '描述你的涂装包...',
+                author: '作者',
+                phAuthor: '作者名称',
+                packIcon: '包图标 (自动转 PNG，可选)',
+                uploadIconAuto: '点击或拖拽上传图标 (自动转 PNG)',
+                showAdvanced: '显示高级选项 (Shadow / Shape / colorTex 高级参数)',
+                textureList: '涂装列表',
+                textureCount: '个涂装',
+                emptyTextures: '还没有添加涂装，点击下方按钮添加',
+                addTexture: '+ 添加涂装',
+                batchImport: '批量导入图片',
+                importPack: '导入涂装包',
+                filePreview: '文件结构预览',
+                downloadPack: '下载涂装包 (ZIP)',
+                advParamHelp: '高级参数说明 (点击展开)',
+                helpIntro: '以下参数来自 SFS 官方纹理系统，99% 的涂装无需修改，保持默认值即可。',
+                helpCoreScaling: '核心缩放',
+                helpParam: '参数', helpDesc: '说明',
+                helpIdeal: '纹理理想缩放值。0.0 为原始尺寸，控制贴图在零件表面的基准缩放比例。',
+                helpBorder: 'Border 边框区域 (顶部 / 底部)',
+                helpSizeMode: '尺寸计算模式。0=Aspect 按宽高比、1=UV 按 UV 坐标、2=Screen 按屏幕像素。',
+                helpSize: '边框区域大小，范围 0~2。',
+                helpUvSize: 'UV 坐标下的边框尺寸，范围 0~1。',
+                helpBorderNote: '顶部和底部边框独立控制，用于让贴图在零件两端保持固定图案（如火箭底部的隔热瓦、顶部的整流罩标志）。',
+                helpCenter: 'Center 中心区域',
+                helpMode: '填充模式。0=Stretch 拉伸、1=Tile 平铺重复、2=Tile Fit 自适应平铺。',
+                helpCenterSize: '中心区域大小。',
+                helpLogoHeight: '标志/logo 在中心区域的高度占比，0~1。',
+                helpScaleLogo: '是否自动缩放标志以适配区域。',
+                helpOtherSwitches: '其他开关',
+                helpFixedWidth: '固定宽度模式。开启后贴图宽度保持固定，不随零件直径变化而拉伸。',
+                helpFixedWidthValue: '固定宽度的具体数值。',
+                helpFlipToLight: '根据光源方向自动翻转贴图，用于模拟反光效果。',
+                helpMetalTexture: '金属质感开关。开启后游戏会调用金属通道渲染，让贴图呈现金属光泽。',
+                helpRedstone: '红石图集打包模式，用于特定图集格式。',
+                helpMultiple: '多重纹理模式，允许一个涂装引用多张不同贴图。',
+                helpSegments: 'Segments 分段系统',
+                helpSegmentsNote: '将贴图分成多个独立区域（如顶部隔热瓦区 + 中部主体区 + 底部引擎区），每个 segment 可以有自己的贴图和独立的 border/center 配置。属于高级功能，导入已有涂装包时可自动保留。',
+                addTextureTitle: '添加涂装', editTextureTitle: '编辑涂装',
+                textureName: '涂装名称 *',
+                textureNameHelp: '此名称将作为配置文件的文件名',
+                texDisplayName: '显示名称 (可选，留空自动生成)',
+                phTexDisplayName: '游戏中显示的涂装名称',
+                colorTextureLabel: 'Color Texture 图片 *',
+                uploadImgAuto: '点击或拖拽上传图片 (自动转 PNG)',
+                width: '宽度', height: '高度', lockRatio: '锁定比例',
+                resetSize: '重置为原始尺寸', powerOf2: '2 的幂',
+                resizeHint: '留空或填 0 则不调整尺寸，直接使用原图',
+                presetSizes: '预设尺寸 (点击应用)',
+                presetFlags: '旗帜 / 标志',
+                preset3to2: '3:2 国旗通用', preset2to1: '2:1 宽幅',
+                presetSFS: 'SFS 常用', byRatio: '按比例',
+                presetSquare: '方形 / 图标',
+                presetPow2: 'SFS 贴图 (2 的幂)',
+                presetParts: 'SFS 部件推荐',
+                partBody: '机身', partRocket: '火箭体', partFairing: '整流罩', partEngine: '引擎', partSmall: '小部件',
+                advancedOptions: '高级选项',
+                tags: '标签 (Tags)',
+                phTagInput: '输入标签按回车添加',
+                colorTexAdvParams: 'colorTex 高级参数 (通常无需修改)',
+                segmentsLabel: 'Segments 分段', segmentsNote: '(导入时保留，暂不支持编辑)', none: '无',
+                shadowTexture: 'Shadow Texture 图片 (可选)',
+                uploadShadowAuto: '上传 Shadow 图片 (自动转 PNG)',
+                shapeTexture: 'Shape Texture 图片 (可选)',
+                uploadShapeAuto: '上传 Shape 图片 (自动转 PNG)',
+                cancel: '取消', save: '保存', edit: '编辑', delete: '删除',
+                // 动态文本
+                toastUploadImg: '请上传图片文件！', toastConvertedPNG: '已自动转换为 PNG',
+                toastConvertFail: '转换失败', toastNoImg: '请先上传图片',
+                toastConverting: '正在转换为 PNG...', toastConvertFailMsg: '转换失败：',
+                toastTexNameRequired: '请输入涂装名称！', toastColorRequired: '请上传 Color Texture PNG 图片！',
+                toastTexAdded: '涂装已添加', toastTexUpdated: '涂装已更新', toastTexDeleted: '涂装已删除',
+                toastNoValidImg: '未找到有效的图片文件！', toastConvertingN: '正在转换 ', toastImgs: ' 张图片...',
+                toastBatchImported: '已批量导入 ', toastTexs: ' 个涂装', toastNoImgImported: '未能导入任何图片',
+                toastZipRequired: '请上传 ZIP 格式的涂装包！', toastParsing: '正在解析涂装包...',
+                toastNoColorTxt: '未在 ZIP 中找到 Color Textures 配置！', toastImported: '已导入 ',
+                toastOrigPackName: '原包名称: ', toastNoTexParsed: '未能从 ZIP 中解析出任何涂装',
+                toastImportFail: '导入失败：', toastPackNameRequired: '请输入包显示名称！',
+                toastAddOneTex: '请至少添加一个涂装！', toastGenerating: '正在生成涂装包...',
+                toastGenerated: '涂装包已生成！', toastGenFail: '生成失败：',
+                origDim: '原始', output: '输出', size: '尺寸', original: '原始',
+                unnamed: '未命名', lockRatioTitle: '锁定/解锁宽高比'
+            },
+            en: {
+                title: 'SFS Texture Pack Maker',
+                subtitle: 'Visual tool for creating Spaceflight Simulator texture packs',
+                joinUs: 'Join Us',
+                packInfo: 'Pack Info',
+                displayName: 'Display Name *',
+                phPackName: 'e.g. China Space Texture Pack',
+                version: 'Version',
+                description: 'Description',
+                phDescription: 'Describe your texture pack...',
+                author: 'Author',
+                phAuthor: 'Author name',
+                packIcon: 'Pack Icon (auto PNG, optional)',
+                uploadIconAuto: 'Click or drag to upload icon (auto PNG)',
+                showAdvanced: 'Show Advanced Options (Shadow / Shape / colorTex)',
+                textureList: 'Texture List',
+                textureCount: ' textures',
+                emptyTextures: 'No textures yet. Click the button below to add one.',
+                addTexture: '+ Add Texture',
+                batchImport: 'Batch Import Images',
+                importPack: 'Import Pack',
+                filePreview: 'File Structure Preview',
+                downloadPack: 'Download Pack (ZIP)',
+                advParamHelp: 'Advanced Parameters (click to expand)',
+                helpIntro: 'These parameters come from the official SFS texture system. 99% of textures need no modification — keep defaults.',
+                helpCoreScaling: 'Core Scaling',
+                helpParam: 'Parameter', helpDesc: 'Description',
+                helpIdeal: 'Ideal texture scale. 0.0 = original size. Controls the base scale of the texture on part surfaces.',
+                helpBorder: 'Border Area (Top / Bottom)',
+                helpSizeMode: 'Size mode. 0=Aspect, 1=UV, 2=Screen.',
+                helpSize: 'Border area size, range 0~2.',
+                helpUvSize: 'Border size in UV coordinates, range 0~1.',
+                helpBorderNote: 'Top and bottom borders are controlled independently to keep fixed patterns at part ends (e.g. heat tiles at the bottom, fairing logos at the top).',
+                helpCenter: 'Center Area',
+                helpMode: 'Fill mode. 0=Stretch, 1=Tile, 2=Tile Fit.',
+                helpCenterSize: 'Center area size.',
+                helpLogoHeight: 'Logo height percentage in center area, 0~1.',
+                helpScaleLogo: 'Whether to auto-scale logo to fit the area.',
+                helpOtherSwitches: 'Other Switches',
+                helpFixedWidth: 'Fixed width mode. When enabled, texture width stays fixed regardless of part diameter.',
+                helpFixedWidthValue: 'The fixed width value.',
+                helpFlipToLight: 'Auto-flip texture based on light direction to simulate reflections.',
+                helpMetalTexture: 'Metallic toggle. When enabled, the game uses the metal channel for metallic rendering.',
+                helpRedstone: 'Redstone atlas packing mode for specific atlas formats.',
+                helpMultiple: 'Multiple texture mode, allows one texture to reference multiple different maps.',
+                helpSegments: 'Segments System',
+                helpSegmentsNote: 'Splits the texture into independent areas (e.g. top heat tile + middle body + bottom engine), each with its own texture and border/center config. Advanced feature, auto-preserved when importing existing packs.',
+                addTextureTitle: 'Add Texture', editTextureTitle: 'Edit Texture',
+                textureName: 'Texture Name *',
+                textureNameHelp: 'This name will be used as the config file name',
+                texDisplayName: 'Display Name (optional, auto-generated if empty)',
+                phTexDisplayName: 'Texture name shown in-game',
+                colorTextureLabel: 'Color Texture Image *',
+                uploadImgAuto: 'Click or drag to upload image (auto PNG)',
+                width: 'Width', height: 'Height', lockRatio: 'Lock Ratio',
+                resetSize: 'Reset to Original', powerOf2: 'Power of 2',
+                resizeHint: 'Leave empty or 0 to keep original size',
+                presetSizes: 'Preset Sizes (click to apply)',
+                presetFlags: 'Flags / Logos',
+                preset3to2: '3:2 Flag General', preset2to1: '2:1 Wide',
+                presetSFS: 'SFS Common', byRatio: 'by ratio',
+                presetSquare: 'Square / Icon',
+                presetPow2: 'SFS Textures (Power of 2)',
+                presetParts: 'SFS Parts Recommended',
+                partBody: 'Body', partRocket: 'Rocket Body', partFairing: 'Fairing', partEngine: 'Engine', partSmall: 'Small Part',
+                advancedOptions: 'Advanced Options',
+                tags: 'Tags',
+                phTagInput: 'Type tag and press Enter',
+                colorTexAdvParams: 'colorTex Advanced Parameters (usually no change needed)',
+                segmentsLabel: 'Segments', segmentsNote: '(preserved on import, editing not supported)', none: 'None',
+                shadowTexture: 'Shadow Texture Image (optional)',
+                uploadShadowAuto: 'Upload Shadow image (auto PNG)',
+                shapeTexture: 'Shape Texture Image (optional)',
+                uploadShapeAuto: 'Upload Shape image (auto PNG)',
+                cancel: 'Cancel', save: 'Save', edit: 'Edit', delete: 'Delete',
+                // 动态文本
+                toastUploadImg: 'Please upload an image file!', toastConvertedPNG: 'Auto-converted to PNG',
+                toastConvertFail: 'Conversion failed', toastNoImg: 'Please upload an image first',
+                toastConverting: 'Converting to PNG...', toastConvertFailMsg: 'Conversion failed: ',
+                toastTexNameRequired: 'Please enter a texture name!', toastColorRequired: 'Please upload a Color Texture image!',
+                toastTexAdded: 'Texture added', toastTexUpdated: 'Texture updated', toastTexDeleted: 'Texture deleted',
+                toastNoValidImg: 'No valid image files found!', toastConvertingN: 'Converting ', toastImgs: ' images...',
+                toastBatchImported: 'Batch imported ', toastTexs: ' textures', toastNoImgImported: 'No images could be imported',
+                toastZipRequired: 'Please upload a ZIP texture pack!', toastParsing: 'Parsing texture pack...',
+                toastNoColorTxt: 'No Color Textures config found in ZIP!', toastImported: 'Imported ',
+                toastOrigPackName: 'Original pack name: ', toastNoTexParsed: 'No textures could be parsed from ZIP',
+                toastImportFail: 'Import failed: ', toastPackNameRequired: 'Please enter a pack display name!',
+                toastAddOneTex: 'Please add at least one texture!', toastGenerating: 'Generating texture pack...',
+                toastGenerated: 'Texture pack generated!', toastGenFail: 'Generation failed: ',
+                origDim: 'Original', output: 'Output', size: 'Size', original: 'original',
+                unnamed: 'Unnamed', lockRatioTitle: 'Lock/Unlock aspect ratio'
+            }
+        };
+
+        let currentLang = 'zh';
+
+        function t(key) {
+            return (i18n[currentLang] && i18n[currentLang][key]) || (i18n.zh[key]) || key;
+        }
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            // 更新所有 data-i18n 元素
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const text = t(key);
+                if (text && text !== key) el.textContent = text;
+            });
+            // 更新所有 data-i18n-ph 占位符
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                const text = t(key);
+                if (text && text !== key) el.placeholder = text;
+            });
+            // 更新动态内容
+            updateTextureList();
+            updatePreview();
+            // 更新模态框标题
+            const editingIdx = document.getElementById('editingIndex').value;
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle) {
+                modalTitle.textContent = editingIdx === '-1' ? t('addTextureTitle') : t('editTextureTitle');
+            }
+            // 更新 lockRatioBtn title
+            const lockBtn = document.getElementById('lockRatioBtn');
+            if (lockBtn) lockBtn.title = t('lockRatioTitle');
+        }
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('sfs_lang', lang);
+            applyLanguage(lang);
+        }
+
+        // 页面加载时恢复语言设置
+        (function() {
+            const saved = localStorage.getItem('sfs_lang') || 'zh';
+            const select = document.getElementById('langSelect');
+            if (select) select.value = saved;
+            currentLang = saved;
+        })();
+
+        // ===== beforeunload 刷新提醒 =====
+        function hasUnsavedWork() {
+            return textures.length > 0 || packIconFile !== null ||
+                document.getElementById('packName').value.trim() !== '' ||
+                document.getElementById('packDesc').value.trim() !== '' ||
+                document.getElementById('packAuthor').value.trim() !== '';
+        }
+
+        window.addEventListener('beforeunload', function(e) {
+            if (hasUnsavedWork()) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+
         let textures = [];
         let packIconFile = null;
         let tempFiles = { color: null, shadow: null, shape: null };
@@ -1323,6 +1611,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             setupFileInputFixes();
+            applyLanguage(currentLang);
             updatePreview();
             updateTextureList();
 
@@ -1331,7 +1620,7 @@
                 if (!file) return;
                 const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
                 if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
-                    showToast('请上传图片文件！', 'error');
+                    showToast(t('toastUploadImg'), 'error');
                     e.target.value = '';
                     return;
                 }
@@ -1347,10 +1636,10 @@
                     };
                     reader.readAsDataURL(pngFile);
                     if (!file.name.toLowerCase().endsWith('.png')) {
-                        showToast('已自动转换为 PNG', 'success');
+                        showToast(t('toastConvertedPNG'), 'success');
                     }
                 }).catch(err => {
-                    showToast('转换失败：' + err.message, 'error');
+                    showToast(t('toastConvertFailMsg') + err.message, 'error');
                 });
                 e.target.value = '';
             });
@@ -1359,7 +1648,7 @@
         // ========== 预设尺寸 ==========
         function applyPreset(w, h) {
             if (!originalImage) {
-                showToast('请先上传图片', 'error');
+                showToast(t('toastNoImg'), 'error');
                 return;
             }
             // 如果 w 和 h 都小于 100，视为比例模式
@@ -1412,7 +1701,7 @@
                 modal.scrollTop = 0;
             }
             document.getElementById('editingIndex').value = index;
-            document.getElementById('modalTitle').textContent = index === -1 ? '添加涂装' : '编辑涂装';
+            document.getElementById('modalTitle').textContent = index === -1 ? t('addTextureTitle') : t('editTextureTitle');
 
             // 重置预览
             hidePreview();
@@ -1427,7 +1716,7 @@
                 (tex.tags || ['tank', 'cone', 'fairing', 'probe']).forEach(tag => {
                     tagContainer.innerHTML += `<span class="tag">${tag} <button onclick="removeTag(this)">&times;</button></span>`;
                 });
-                tagContainer.innerHTML += '<input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
+                tagContainer.innerHTML += '<input type="text" placeholder="' + t('phTagInput') + '" onkeydown="handleTagInput(event)">';
 
                 if (tex.colorFile) {
                     document.getElementById('texColorLabel').textContent = tex.colorFile.name + ' (' + formatBytes(tex.colorFile.size) + ')';
@@ -1483,15 +1772,15 @@
             } else {
                 document.getElementById('texName').value = '';
                 document.getElementById('texDisplayName').value = '';
-                document.getElementById('texColorLabel').textContent = '点击或拖拽上传图片 (自动转 PNG)';
+                document.getElementById('texColorLabel').textContent = t('uploadImgAuto');
                 document.getElementById('texColorLabel').classList.remove('has-file');
-                document.getElementById('texShadowLabel').textContent = '上传 Shadow 图片 (自动转 PNG)';
+                document.getElementById('texShadowLabel').textContent = t('uploadShadowAuto');
                 document.getElementById('texShadowLabel').classList.remove('has-file');
-                document.getElementById('texShapeLabel').textContent = '上传 Shape 图片 (自动转 PNG)';
+                document.getElementById('texShapeLabel').textContent = t('uploadShapeAuto');
                 document.getElementById('texShapeLabel').classList.remove('has-file');
 
                 const tagContainer = document.getElementById('tagInput');
-                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><span class="tag">probe <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="输入标签按回车添加" onkeydown="handleTagInput(event)">';
+                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><span class="tag">probe <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="' + t('phTagInput') + '" onkeydown="handleTagInput(event)">';
 
                 tempFiles = { color: null, shadow: null, shape: null };
                 tempSegments = [];
@@ -1536,7 +1825,7 @@
             const el = document.getElementById('segmentsPreview');
             if (!el) return;
             if (!tempSegments || tempSegments.length === 0) {
-                el.textContent = '无';
+                el.textContent = t('none');
                 return;
             }
             el.innerHTML = tempSegments.map((s, i) => {
@@ -1598,11 +1887,11 @@
             if (!file) return;
             const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
             if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
-                showToast('请上传图片文件！', 'error');
+                showToast(t('toastUploadImg'), 'error');
                 input.value = '';
                 return;
             }
-            showToast('正在转换为 PNG...', 'info');
+            showToast(t('toastConverting'), 'info');
             convertToPNG(file).then(pngFile => {
                 tempFiles[type] = pngFile;
                 const labelMap = { color: 'texColorLabel', shadow: 'texShadowLabel', shape: 'texShapeLabel' };
@@ -1613,10 +1902,10 @@
                     loadImageForPreview(pngFile, 0, 0);
                 }
                 if (!file.name.toLowerCase().endsWith('.png')) {
-                    showToast('已自动转换为 PNG', 'success');
+                    showToast(t('toastConvertedPNG'), 'success');
                 }
             }).catch(err => {
-                showToast('转换失败：' + err.message, 'error');
+                showToast(t('toastConvertFailMsg') + err.message, 'error');
             });
             input.value = '';
         }
@@ -1804,12 +2093,12 @@
             const index = parseInt(document.getElementById('editingIndex').value);
 
             if (!name) {
-                showToast('请输入涂装名称！', 'error');
+                showToast(t('toastTexNameRequired'), 'error');
                 return;
             }
 
             if (!tempFiles.color) {
-                showToast('请上传 Color Texture PNG 图片！', 'error');
+                showToast(t('toastColorRequired'), 'error');
                 return;
             }
 
@@ -1862,10 +2151,10 @@
 
             if (index === -1) {
                 textures.push(texData);
-                showToast('涂装已添加', 'success');
+                showToast(t('toastTexAdded'), 'success');
             } else {
                 textures[index] = texData;
-                showToast('涂装已更新', 'success');
+                showToast(t('toastTexUpdated'), 'success');
             }
 
             updateTextureList();
@@ -1878,7 +2167,7 @@
                 textures.splice(index, 1);
                 updateTextureList();
                 updatePreview();
-                showToast('涂装已删除', 'info');
+                showToast(t('toastTexDeleted'), 'info');
             }
         }
 
@@ -1893,12 +2182,12 @@
             });
 
             if (imageFiles.length === 0) {
-                showToast('未找到有效的图片文件！', 'error');
+                showToast(t('toastNoValidImg'), 'error');
                 input.value = '';
                 return;
             }
 
-            showToast('正在转换 ' + imageFiles.length + ' 张图片...', 'info');
+            showToast(t('toastConvertingN') + imageFiles.length + t('toastImgs'), 'info');
 
             let count = 0;
             for (const file of imageFiles) {
@@ -1926,9 +2215,9 @@
             if (count > 0) {
                 updateTextureList();
                 updatePreview();
-                showToast('已批量导入 ' + count + ' 个涂装', 'success');
+                showToast(t('toastBatchImported') + count + t('toastTexs'), 'success');
             } else {
-                showToast('未能导入任何图片', 'error');
+                showToast(t('toastNoImgImported'), 'error');
             }
             input.value = '';
         }
@@ -1938,12 +2227,12 @@
             const file = input.files[0];
             if (!file) return;
             if (!file.name.toLowerCase().endsWith('.zip')) {
-                showToast('请上传 ZIP 格式的涂装包！', 'error');
+                showToast(t('toastZipRequired'), 'error');
                 input.value = '';
                 return;
             }
 
-            showToast('正在解析涂装包...', 'info');
+            showToast(t('toastParsing'), 'info');
 
             try {
                 const zip = await JSZip.loadAsync(file);
@@ -1993,7 +2282,7 @@
                 });
 
                 if (colorTxtFiles.length === 0) {
-                    showToast('未在 ZIP 中找到 Color Textures 配置！', 'error');
+                    showToast(t('toastNoColorTxt'), 'error');
                     input.value = '';
                     return;
                 }
@@ -2158,16 +2447,16 @@
                 if (importedCount > 0) {
                     updateTextureList();
                     updatePreview();
-                    showToast('已导入 ' + importedCount + ' 个涂装', 'success');
+                    showToast(t('toastImported') + importedCount + t('toastTexs'), 'success');
                     // 如果原包有信息，可以更新一些字段
                     if (packInfo && packInfo.DisplayName) {
-                        showToast('原包名称: ' + packInfo.DisplayName, 'info');
+                        showToast(t('toastOrigPackName') + packInfo.DisplayName, 'info');
                     }
                 } else {
-                    showToast('未能从 ZIP 中解析出任何涂装', 'error');
+                    showToast(t('toastNoTexParsed'), 'error');
                 }
             } catch (err) {
-                showToast('导入失败：' + err.message, 'error');
+                showToast(t('toastImportFail') + err.message, 'error');
                 console.error(err);
             }
 
@@ -2185,10 +2474,10 @@
 
         function updateTextureList() {
             const container = document.getElementById('textureList');
-            document.getElementById('textureCount').textContent = textures.length + ' 个涂装';
+            document.getElementById('textureCount').textContent = textures.length + t('textureCount');
 
             if (textures.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>还没有添加涂装，点击下方按钮添加</p></div>';
+                container.innerHTML = '<div class="empty-state"><p>' + t('emptyTextures') + '</p></div>';
                 return;
             }
 
@@ -2202,9 +2491,9 @@
                 let sizeInfo = '';
                 if (tex.originalW && tex.originalH) {
                     if (tex.resizeW > 0 && tex.resizeH > 0) {
-                        sizeInfo = `原始 ${tex.originalW}x${tex.originalH} &rarr; 输出 ${tex.resizeW}x${tex.resizeH}`;
+                        sizeInfo = `${t('origDim')} ${tex.originalW}x${tex.originalH} &rarr; ${t('output')} ${tex.resizeW}x${tex.resizeH}`;
                     } else {
-                        sizeInfo = `尺寸 ${tex.originalW}x${tex.originalH} (原始)`;
+                        sizeInfo = `${t('size')} ${tex.originalW}x${tex.originalH} (${t('original')})`;
                     }
                 }
 
@@ -2230,8 +2519,8 @@
                             </div>
                             <div style="display:flex; gap:6px; flex-shrink:0;">
                                 ${upBtn}${downBtn}
-                                <button class="btn btn-secondary" onclick="openTextureModal(${i})">编辑</button>
-                                <button class="btn btn-danger" onclick="deleteTexture(${i})">删除</button>
+                                <button class="btn btn-secondary" onclick="openTextureModal(${i})">${t('edit')}</button>
+                                <button class="btn btn-danger" onclick="deleteTexture(${i})">${t('delete')}</button>
                             </div>
                         </div>
                         <div class="texture-body">
@@ -2243,7 +2532,7 @@
         }
 
         function updatePreview() {
-            const packName = document.getElementById('packName').value || '未命名';
+            const packName = document.getElementById('packName').value || t('unnamed');
             const preview = document.getElementById('filePreview');
 
             let html = `<span class="tree-folder">${packName}/</span>\n`;
@@ -2293,10 +2582,10 @@
 
         async function generatePack() {
             const packName = document.getElementById('packName').value.trim();
-            if (!packName) { showToast('请输入包显示名称！', 'error'); return; }
-            if (textures.length === 0) { showToast('请至少添加一个涂装！', 'error'); return; }
+            if (!packName) { showToast(t('toastPackNameRequired'), 'error'); return; }
+            if (textures.length === 0) { showToast(t('toastAddOneTex'), 'error'); return; }
 
-            showToast('正在生成涂装包...', 'info');
+            showToast(t('toastGenerating'), 'info');
 
             const zip = new JSZip();
             const root = zip.folder(packName);
@@ -2383,11 +2672,11 @@
             try {
                 const blob = await zip.generateAsync({ type: 'blob' });
                 saveAs(blob, packName + '.zip');
-                showToast('涂装包已生成！', 'success');
+                showToast(t('toastGenerated'), 'success');
             } catch (err) {
-                showToast('生成失败：' + err.message, 'error');
+                showToast(t('toastGenFail') + err.message, 'error');
             }
         }
     </script>
-</body>
-</html>
+
+</body></html>
