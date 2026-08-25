@@ -500,25 +500,6 @@
         .progress-bar { width: 0; height: 100%; background: var(--text); transition: width 0.15s ease; }
         .progress-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
-        .resource-settings-card { padding: 16px 24px; }
-        .resource-settings-card summary { cursor: pointer; color: var(--text-muted); font-size: 0.95rem; user-select: none; }
-        .resource-settings-card summary:hover { color: var(--text); }
-        .resource-settings-content { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); }
-        .resource-settings-intro { margin-bottom: 16px; color: var(--text-muted); font-size: 0.84rem; }
-        .limits-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
-        .limit-field { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
-        .limit-field label { grid-column: 1 / -1; }
-        .limit-field input { min-width: 0; }
-        .limit-unit { min-width: 48px; padding: 10px 0; color: var(--text-dim); font-size: 0.82rem; text-align: right; }
-        .resource-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border); }
-        .limit-risk-overlay { display: none; position: fixed; inset: 0; z-index: 2600; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.78); }
-        .limit-risk-overlay.visible { display: flex; }
-        .limit-risk-card { width: min(520px, 100%); padding: 24px; border: 1px solid var(--warning); border-radius: 10px; background: #111; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5); }
-        .limit-risk-card h3 { margin-bottom: 10px; color: var(--warning); font-size: 1.05rem; }
-        .limit-risk-card p { margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem; }
-        .limit-risk-details { padding: 10px 12px; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); color: var(--text); font: 0.8rem/1.5 Consolas, Monaco, monospace; white-space: pre-wrap; }
-        .limit-risk-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
-
         .toolbar {
             display: flex;
             justify-content: space-between;
@@ -854,9 +835,6 @@
             .advanced-toggle span { font-size: 0.85rem; }
             .preset-chip { min-height: 44px; min-width: 60px; font-size: 0.82rem; }
             .adv-param-grid { grid-template-columns: 1fr; }
-            .limits-grid { grid-template-columns: 1fr; }
-            .resource-settings-card { padding: 16px; }
-            .limit-risk-card { padding: 20px; }
             .help-table td:first-child { width: 120px; white-space: normal; }
             .section-label { font-size: 0.8rem; }
             .preset-group-label { font-size: 0.75rem; }
@@ -961,30 +939,6 @@
         <div class="advanced-toggle">
             <input type="checkbox" id="advancedCheck" aria-controls="advancedOptions" aria-expanded="false" onchange="setAdvancedOptions(this.checked)">
             <label for="advancedCheck" data-i18n="showAdvanced">显示高级选项 (Shadow / Shape / colorTex 高级参数)</label>
-        </div>
-
-        <!-- 性能与安全限制 -->
-        <div class="card resource-settings-card">
-            <details id="resourceSettings">
-                <summary data-i18n="resourceSettings">性能与安全限制</summary>
-                <div class="resource-settings-content">
-                    <p class="resource-settings-intro" data-i18n="resourceSettingsIntro">这些限制用于避免大文件导致浏览器卡顿或内存不足。提高超过默认值的项目需要确认风险，设置仅保存在当前浏览器。</p>
-                    <div class="limits-grid">
-                        <div class="limit-field"><label for="limitMaxImageMB" data-i18n="limitMaxImageMB">单张图片最大文件大小</label><input type="number" id="limitMaxImageMB" min="1" max="2000" step="1"><span class="limit-unit">MB</span></div>
-                        <div class="limit-field"><label for="limitMaxImageMP" data-i18n="limitMaxImageMP">单张图片最大像素</label><input type="number" id="limitMaxImageMP" min="1" max="1024" step="1"><span class="limit-unit">MP</span></div>
-                        <div class="limit-field"><label for="limitMaxBatchImages" data-i18n="limitMaxBatchImages">批量导入图片数量</label><input type="number" id="limitMaxBatchImages" min="1" max="1000" step="1"><span class="limit-unit" data-i18n="unitFiles">个</span></div>
-                        <div class="limit-field"><label for="limitMaxBatchMB" data-i18n="limitMaxBatchMB">批量导入总大小</label><input type="number" id="limitMaxBatchMB" min="1" max="5000" step="1"><span class="limit-unit">MB</span></div>
-                        <div class="limit-field"><label for="limitMaxZipMB" data-i18n="limitMaxZipMB">ZIP 文件最大大小</label><input type="number" id="limitMaxZipMB" min="1" max="5000" step="1"><span class="limit-unit">MB</span></div>
-                        <div class="limit-field"><label for="limitMaxZipEntries" data-i18n="limitMaxZipEntries">ZIP 内文件数量</label><input type="number" id="limitMaxZipEntries" min="1" max="10000" step="1"><span class="limit-unit" data-i18n="unitFiles">个</span></div>
-                        <div class="limit-field"><label for="limitMaxZipUncompressedMB" data-i18n="limitMaxZipUncompressedMB">ZIP 解压后总大小</label><input type="number" id="limitMaxZipUncompressedMB" min="1" max="10000" step="1"><span class="limit-unit">MB</span></div>
-                        <div class="limit-field"><label for="limitMaxOutputDimension" data-i18n="limitMaxOutputDimension">导出贴图最大边长</label><input type="number" id="limitMaxOutputDimension" min="1" max="16384" step="1"><span class="limit-unit">px</span></div>
-                    </div>
-                    <div class="resource-actions">
-                        <button class="btn btn-primary" type="button" onclick="requestSaveResourceLimits()" data-i18n="saveLimits">保存设置</button>
-                        <button class="btn btn-secondary" type="button" onclick="resetResourceLimits()" data-i18n="resetLimits">恢复默认值</button>
-                    </div>
-                </div>
-            </details>
         </div>
 
         <!-- 涂装列表 -->
@@ -1111,10 +1065,10 @@
             <div class="resize-section" id="resizeSection" style="display:none;">
                 <div class="resize-row">
                     <label data-i18n="width">宽度</label>
-                    <input type="number" id="resizeW" min="1" max="8192" placeholder="宽" oninput="onResizeInput('w')">
+                    <input type="number" id="resizeW" min="1" placeholder="宽" oninput="onResizeInput('w')">
                     <span class="dim-sep">x</span>
                     <label data-i18n="height">高度</label>
-                    <input type="number" id="resizeH" min="1" max="8192" placeholder="高" oninput="onResizeInput('h')">
+                    <input type="number" id="resizeH" min="1" placeholder="高" oninput="onResizeInput('h')">
                     <button class="link-btn" id="lockRatioBtn" onclick="toggleLockRatio()" title="锁定/解锁宽高比">🔒 <span data-i18n="lockRatio">锁定比例</span></button>
                 </div>
                 <div class="resize-row">
@@ -1323,19 +1277,6 @@
     <!-- Toast -->
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <!-- 提高性能限制前的风险确认 -->
-    <div class="limit-risk-overlay" id="limitRiskModal" aria-hidden="true">
-        <div class="limit-risk-card" role="dialog" aria-modal="true" aria-labelledby="limitRiskTitle" aria-describedby="limitRiskMessage">
-            <h3 id="limitRiskTitle" data-i18n="riskTitle">提高限制可能导致内存不足</h3>
-            <p id="limitRiskMessage" data-i18n="riskMessage">更大的图片、ZIP 或批量任务会占用更多浏览器内存，可能造成页面卡顿、标签页崩溃或导出失败。</p>
-            <div class="limit-risk-details" id="limitRiskDetails"></div>
-            <div class="limit-risk-actions">
-                <button class="btn btn-secondary" type="button" onclick="closeLimitRiskModal()" data-i18n="riskCancel">返回修改</button>
-                <button class="btn btn-danger" type="button" onclick="confirmSaveResourceLimits()" data-i18n="riskConfirm">我了解风险，仍要保存</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 长任务进度与取消控制 -->
     <div class="progress-overlay" id="taskProgress" aria-hidden="true">
         <div class="progress-card" role="dialog" aria-modal="true" aria-labelledby="progressTitle" aria-describedby="progressMessage">
@@ -1446,16 +1387,6 @@
                 toastUnsafeZipPath: 'ZIP 中包含不安全的文件路径。',
                 progressPreparing: '正在准备…', progressBatchTitle: '正在导入图片', progressImportTitle: '正在解析涂装包', progressExportTitle: '正在生成涂装包',
                 progressProcessing: '正在处理', cancelTask: '取消处理',
-                resourceSettings: '性能与安全限制',
-                resourceSettingsIntro: '这些限制用于避免大文件导致浏览器卡顿或内存不足。提高超过默认值的项目需要确认风险，设置仅保存在当前浏览器。',
-                limitMaxImageMB: '单张图片最大文件大小', limitMaxImageMP: '单张图片最大像素',
-                limitMaxBatchImages: '批量导入图片数量', limitMaxBatchMB: '批量导入总大小',
-                limitMaxZipMB: 'ZIP 文件最大大小', limitMaxZipEntries: 'ZIP 内文件数量',
-                limitMaxZipUncompressedMB: 'ZIP 解压后总大小', limitMaxOutputDimension: '导出贴图最大边长', unitFiles: '个',
-                saveLimits: '保存设置', resetLimits: '恢复默认值', limitsSaved: '性能与安全限制已保存。', limitsReset: '已恢复默认限制。',
-                invalidLimit: '请输入有效的限制数值。', riskTitle: '提高限制可能导致内存不足',
-                riskMessage: '更大的图片、ZIP 或批量任务会占用更多浏览器内存，可能造成页面卡顿、标签页崩溃或导出失败。',
-                riskCancel: '返回修改', riskConfirm: '我了解风险，仍要保存', riskDetails: '以下项目高于默认值：',
                 origDim: '原始', output: '输出', size: '尺寸', original: '原始',
                 unnamed: '未命名', lockRatioTitle: '锁定/解锁宽高比'
             },
@@ -1556,16 +1487,6 @@
                 toastUnsafeZipPath: 'The ZIP contains an unsafe file path.',
                 progressPreparing: 'Preparing…', progressBatchTitle: 'Importing images', progressImportTitle: 'Parsing texture pack', progressExportTitle: 'Generating texture pack',
                 progressProcessing: 'Processing', cancelTask: 'Cancel processing',
-                resourceSettings: 'Performance & Safety Limits',
-                resourceSettingsIntro: 'These limits help prevent browser slowdowns or out-of-memory failures. Raising a value above its default requires risk confirmation. Settings stay only in this browser.',
-                limitMaxImageMB: 'Max single-image file size', limitMaxImageMP: 'Max single-image pixels',
-                limitMaxBatchImages: 'Max batch image count', limitMaxBatchMB: 'Max batch total size',
-                limitMaxZipMB: 'Max ZIP file size', limitMaxZipEntries: 'Max ZIP entry count',
-                limitMaxZipUncompressedMB: 'Max ZIP uncompressed size', limitMaxOutputDimension: 'Max exported texture dimension', unitFiles: 'files',
-                saveLimits: 'Save settings', resetLimits: 'Restore defaults', limitsSaved: 'Performance and safety limits saved.', limitsReset: 'Default limits restored.',
-                invalidLimit: 'Enter valid limit values.', riskTitle: 'Higher limits may cause memory issues',
-                riskMessage: 'Larger images, ZIP files, and batch jobs use more browser memory and can cause slowdowns, tab crashes, or export failures.',
-                riskCancel: 'Go back', riskConfirm: 'I understand, save anyway', riskDetails: 'These values are above the defaults:',
                 origDim: 'Original', output: 'Output', size: 'Size', original: 'original',
                 unnamed: 'Unnamed', lockRatioTitle: 'Lock/Unlock aspect ratio'
             }
@@ -1642,127 +1563,13 @@
         let tempSegments = []; // 当前编辑的 segments
 
         const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
-        const MB = 1024 * 1024;
-        const DEFAULT_LIMITS = Object.freeze({
-            maxImageBytes: 20 * MB,
-            maxImagePixels: 16 * MB,
-            maxBatchImages: 100,
-            maxBatchBytes: 200 * MB,
-            maxZipBytes: 100 * MB,
-            maxZipEntries: 1000,
-            maxZipUncompressedBytes: 300 * MB,
-            maxOutputDimension: 8192,
+        const SAFETY_LIMITS = Object.freeze({
             maxNameLength: 80,
             maxTagLength: 48,
             maxTags: 20
         });
-        const LIMIT_STORAGE_KEY = 'sfs_resource_limits_v1';
-        const RESOURCE_LIMIT_FIELDS = Object.freeze([
-            { key: 'maxImageBytes', input: 'limitMaxImageMB', scale: MB, min: 1 * MB, max: 2000 * MB, unit: 'MB', label: 'limitMaxImageMB' },
-            { key: 'maxImagePixels', input: 'limitMaxImageMP', scale: MB, min: 1 * MB, max: 1024 * MB, unit: 'MP', label: 'limitMaxImageMP' },
-            { key: 'maxBatchImages', input: 'limitMaxBatchImages', scale: 1, min: 1, max: 1000, unitKey: 'unitFiles', label: 'limitMaxBatchImages' },
-            { key: 'maxBatchBytes', input: 'limitMaxBatchMB', scale: MB, min: 1 * MB, max: 5000 * MB, unit: 'MB', label: 'limitMaxBatchMB' },
-            { key: 'maxZipBytes', input: 'limitMaxZipMB', scale: MB, min: 1 * MB, max: 5000 * MB, unit: 'MB', label: 'limitMaxZipMB' },
-            { key: 'maxZipEntries', input: 'limitMaxZipEntries', scale: 1, min: 1, max: 10000, unitKey: 'unitFiles', label: 'limitMaxZipEntries' },
-            { key: 'maxZipUncompressedBytes', input: 'limitMaxZipUncompressedMB', scale: MB, min: 1 * MB, max: 10000 * MB, unit: 'MB', label: 'limitMaxZipUncompressedMB' },
-            { key: 'maxOutputDimension', input: 'limitMaxOutputDimension', scale: 1, min: 1, max: 16384, unit: 'px', label: 'limitMaxOutputDimension' }
-        ]);
-        let LIMITS = { ...DEFAULT_LIMITS };
-        let pendingResourceLimits = null;
         let activeTask = null;
 
-        function normalizeResourceLimits(values) {
-            const normalized = { ...DEFAULT_LIMITS };
-            RESOURCE_LIMIT_FIELDS.forEach(field => {
-                const raw = Number(values && values[field.key]);
-                if (Number.isFinite(raw)) normalized[field.key] = Math.round(Math.min(field.max, Math.max(field.min, raw)));
-            });
-            return normalized;
-        }
-
-        function renderResourceLimits() {
-            RESOURCE_LIMIT_FIELDS.forEach(field => {
-                const input = document.getElementById(field.input);
-                if (input) input.value = String(Math.round(LIMITS[field.key] / field.scale));
-            });
-        }
-
-        function collectResourceLimits() {
-            const values = { ...DEFAULT_LIMITS };
-            for (const field of RESOURCE_LIMIT_FIELDS) {
-                const input = document.getElementById(field.input);
-                const displayValue = Number(input && input.value);
-                if (!Number.isFinite(displayValue) || displayValue <= 0) return null;
-                const value = Math.round(displayValue * field.scale);
-                if (value < field.min || value > field.max) return null;
-                values[field.key] = value;
-            }
-            return normalizeResourceLimits(values);
-        }
-
-        function getLimitUnit(field) {
-            return ' ' + (field.unitKey ? t(field.unitKey) : field.unit);
-        }
-
-        function getRaisedLimitDetails(values) {
-            return RESOURCE_LIMIT_FIELDS.filter(field => values[field.key] > DEFAULT_LIMITS[field.key])
-                .map(field => {
-                    const unit = getLimitUnit(field);
-                    return t(field.label) + ': ' + Math.round(DEFAULT_LIMITS[field.key] / field.scale) + unit + ' → ' + Math.round(values[field.key] / field.scale) + unit;
-                });
-        }
-
-        function persistResourceLimits(values) {
-            LIMITS = normalizeResourceLimits(values);
-            try { localStorage.setItem(LIMIT_STORAGE_KEY, JSON.stringify(LIMITS)); } catch (error) { console.warn('无法保存资源限制：', error); }
-            renderResourceLimits();
-            showToast(t('limitsSaved'), 'success');
-        }
-
-        function requestSaveResourceLimits() {
-            const values = collectResourceLimits();
-            if (!values) { showToast(t('invalidLimit'), 'error'); return; }
-            const raised = getRaisedLimitDetails(values);
-            if (!raised.length) { persistResourceLimits(values); return; }
-            pendingResourceLimits = values;
-            document.getElementById('limitRiskDetails').textContent = t('riskDetails') + '\n' + raised.join('\n');
-            const modal = document.getElementById('limitRiskModal');
-            modal.classList.add('visible');
-            modal.setAttribute('aria-hidden', 'false');
-        }
-
-        function closeLimitRiskModal() {
-            pendingResourceLimits = null;
-            const modal = document.getElementById('limitRiskModal');
-            modal.classList.remove('visible');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-
-        function confirmSaveResourceLimits() {
-            if (!pendingResourceLimits) return closeLimitRiskModal();
-            const values = pendingResourceLimits;
-            closeLimitRiskModal();
-            persistResourceLimits(values);
-        }
-
-        function resetResourceLimits() {
-            pendingResourceLimits = null;
-            LIMITS = { ...DEFAULT_LIMITS };
-            try { localStorage.removeItem(LIMIT_STORAGE_KEY); } catch (error) { console.warn('无法清除资源限制：', error); }
-            renderResourceLimits();
-            showToast(t('limitsReset'), 'info');
-        }
-
-        function loadResourceLimits() {
-            try {
-                const saved = localStorage.getItem(LIMIT_STORAGE_KEY);
-                if (saved) LIMITS = normalizeResourceLimits(JSON.parse(saved));
-            } catch (error) {
-                console.warn('无法读取资源限制：', error);
-                LIMITS = { ...DEFAULT_LIMITS };
-            }
-            renderResourceLimits();
-        }
         const previewObjectUrls = new Set();
 
         class TaskCancelledError extends Error {
@@ -1835,15 +1642,15 @@
         function sanitizeFileStem(value, fallback = 'texture') {
             const cleaned = String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '')
                 .trim().replace(/[\\/:*?"<>|]/g, '_').replace(/\.{2,}/g, '_')
-                .replace(/\s+/g, ' ').replace(/^[. ]+|[. ]+$/g, '').slice(0, LIMITS.maxNameLength);
+                .replace(/\s+/g, ' ').replace(/^[. ]+|[. ]+$/g, '').slice(0, SAFETY_LIMITS.maxNameLength);
             return cleaned || fallback;
         }
 
         function normalizeTags(tags, fallback = []) {
             const source = Array.isArray(tags) ? tags : fallback;
             const unique = new Set();
-            return source.map(tag => String(tag ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, LIMITS.maxTagLength))
-                .filter(tag => tag && !unique.has(tag) && unique.add(tag)).slice(0, LIMITS.maxTags);
+            return source.map(tag => String(tag ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, SAFETY_LIMITS.maxTagLength))
+                .filter(tag => tag && !unique.has(tag) && unique.add(tag)).slice(0, SAFETY_LIMITS.maxTags);
         }
 
         function createTagElement(value) {
@@ -1882,10 +1689,6 @@
 
         function isImageFile(file) {
             return file && (IMAGE_TYPES.includes(file.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name));
-        }
-
-        function assertImageFileSize(file) {
-            if (file.size > LIMITS.maxImageBytes) throw new Error(t('toastFileTooLarge') + file.name + ' (' + formatBytes(file.size) + ')');
         }
 
         function isSafeZipPath(path) {
@@ -1995,7 +1798,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupFileInputFixes();
             applyLanguage(currentLang);
-            loadResourceLimits();
             updatePreview();
             updateTextureList();
 
@@ -2055,7 +1857,7 @@
         function nearestPow2(n) {
             // 就近取 2 的幂
             const p = Math.pow(2, Math.round(Math.log2(Math.max(1, n))));
-            return Math.max(2, Math.min(4096, p));
+            return Math.max(2, p);
         }
 
         function formatBytes(bytes) {
@@ -2206,10 +2008,10 @@
                 return;
             }
             const fragment = document.createDocumentFragment();
-            tempSegments.slice(0, LIMITS.maxTags).forEach((segment, index) => {
+            tempSegments.slice(0, SAFETY_LIMITS.maxTags).forEach((segment, index) => {
                 const line = document.createElement('div');
                 line.style.margin = '2px 0';
-                line.textContent = '• ' + String(segment && segment.name ? segment.name : ('Segment ' + (index + 1))).slice(0, LIMITS.maxNameLength);
+                line.textContent = '• ' + String(segment && segment.name ? segment.name : ('Segment ' + (index + 1))).slice(0, SAFETY_LIMITS.maxNameLength);
                 fragment.append(line);
             });
             el.replaceChildren(fragment);
@@ -2218,9 +2020,6 @@
         // 点击遮罩层空白区域关闭模态框
         document.getElementById('textureModal').addEventListener('click', function(e) {
             if (e.target === this) closeTextureModal();
-        });
-        document.getElementById('limitRiskModal').addEventListener('click', function(e) {
-            if (e.target === this) closeLimitRiskModal();
         });
 
         function hidePreview() {
@@ -2234,7 +2033,6 @@
 
         function loadImageFromFile(file, task = null) {
             assertTaskActive(task);
-            assertImageFileSize(file);
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onerror = () => reject(new Error('文件读取失败'));
@@ -2246,7 +2044,7 @@
                         try {
                             assertTaskActive(task);
                             const pixels = image.naturalWidth * image.naturalHeight;
-                            if (!image.naturalWidth || !image.naturalHeight || pixels > LIMITS.maxImagePixels) {
+                            if (!image.naturalWidth || !image.naturalHeight) {
                                 throw new Error(t('toastImageTooLarge') + file.name + ' (' + image.naturalWidth + ' × ' + image.naturalHeight + ')');
                             }
                             resolve({ image, dataUrl: event.target.result });
@@ -2424,7 +2222,7 @@
             const value = normalizeTags([e.target.value])[0];
             if (!value) return;
             const existing = getTags();
-            if (existing.some(tag => tag === value) || existing.length >= LIMITS.maxTags) return;
+            if (existing.some(tag => tag === value) || existing.length >= SAFETY_LIMITS.maxTags) return;
             e.target.parentNode.insertBefore(createTagElement(value), e.target);
             e.target.value = '';
         }
@@ -2571,7 +2369,7 @@
             let suffix = 2;
             while (used.has(candidate.toLocaleLowerCase())) {
                 const postfix = '-' + suffix++;
-                candidate = base.slice(0, Math.max(1, LIMITS.maxNameLength - postfix.length)) + postfix;
+                candidate = base.slice(0, Math.max(1, SAFETY_LIMITS.maxNameLength - postfix.length)) + postfix;
             }
             return candidate;
         }
@@ -2585,18 +2383,6 @@
                 input.value = '';
                 return;
             }
-            const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0);
-            if (imageFiles.length > LIMITS.maxBatchImages) {
-                showToast(t('toastTooManyFiles'), 'error');
-                input.value = '';
-                return;
-            }
-            if (totalBytes > LIMITS.maxBatchBytes) {
-                showToast(t('toastFileTooLarge') + formatBytes(totalBytes), 'error');
-                input.value = '';
-                return;
-            }
-
             const task = startTask('progressBatchTitle');
             const additions = [];
             let failed = 0;
@@ -2654,23 +2440,13 @@
                 input.value = '';
                 return;
             }
-            if (file.size > LIMITS.maxZipBytes) {
-                showToast(t('toastZipTooLarge'), 'error');
-                input.value = '';
-                return;
-            }
-
             const task = startTask('progressImportTitle');
             const additions = [];
             try {
                 const zip = await JSZip.loadAsync(file);
                 assertTaskActive(task);
                 const allPaths = Object.keys(zip.files);
-                const entries = Object.values(zip.files).filter(entry => !entry.dir);
-                if (allPaths.length > LIMITS.maxZipEntries) throw new Error(t('toastTooManyFiles'));
                 if (allPaths.some(path => !isSafeZipPath(path))) throw new Error(t('toastUnsafeZipPath'));
-                const declaredUncompressedSize = entries.reduce((sum, entry) => sum + Number(entry && entry._data && entry._data.uncompressedSize || 0), 0);
-                if (declaredUncompressedSize > LIMITS.maxZipUncompressedBytes) throw new Error(t('toastZipTooLarge'));
 
                 const folders = allPaths.filter(path => path.endsWith('/'));
                 let rootPrefix = '';
@@ -2700,7 +2476,6 @@
                 }
                 const colorTxtFiles = allPaths.filter(path => path.toLowerCase().endsWith('.txt') && path.toLowerCase().startsWith(colorTexturesPath.toLowerCase()));
                 if (!colorTxtFiles.length) throw new Error(t('toastNoColorTxt'));
-                if (colorTxtFiles.length > LIMITS.maxBatchImages) throw new Error(t('toastTooManyFiles'));
 
                 const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
                 const textureImages = allPaths.filter(path => texturesPath && path.toLowerCase().startsWith(texturesPath.toLowerCase()) && imageExtensions.includes(path.substring(path.lastIndexOf('.')).toLowerCase()));
@@ -2715,7 +2490,6 @@
                     if (!entry) return null;
                     const blob = await entry.async('blob');
                     assertTaskActive(task);
-                    if (blob.size > LIMITS.maxImageBytes) throw new Error(t('toastFileTooLarge') + zipPath);
                     const originalName = zipPath.split('/').pop();
                     const imageFile = new File([blob], originalName, { type: blob.type || 'image/png' });
                     return convertToPNG(imageFile, task);
@@ -2769,7 +2543,7 @@
                         originalW: 0,
                         originalH: 0,
                         advParams: Object.keys(advParams).length ? advParams : undefined,
-                        segments: Array.isArray(config && config.segments) ? config.segments.slice(0, LIMITS.maxTags) : undefined
+                        segments: Array.isArray(config && config.segments) ? config.segments.slice(0, SAFETY_LIMITS.maxTags) : undefined
                     });
                     await yieldToUI();
                 }
@@ -2920,12 +2694,6 @@
             document.getElementById(id).addEventListener('input', updatePreview);
         });
 
-        function assertOutputDimensions(width, height) {
-            if (width < 0 || height < 0 || width > LIMITS.maxOutputDimension || height > LIMITS.maxOutputDimension || (width > 0 && height > 0 && width * height > LIMITS.maxImagePixels)) {
-                throw new Error(t('toastImageTooLarge') + width + ' × ' + height);
-            }
-        }
-
         async function generatePack() {
             const rawPackName = document.getElementById('packName').value.trim();
             if (!rawPackName) { showToast(t('toastPackNameRequired'), 'error'); return; }
@@ -2961,7 +2729,6 @@
                     updateTaskProgress(task, index, textures.length, t('progressProcessing') + ' ' + (index + 1) + '/' + textures.length + '：' + tex.name);
                     const resizeW = Number(tex.resizeW) || 0;
                     const resizeH = Number(tex.resizeH) || 0;
-                    assertOutputDimensions(resizeW, resizeH);
                     const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH);
                     assertTaskActive(task);
                     const colorOutputName = tex.name + '.png';
