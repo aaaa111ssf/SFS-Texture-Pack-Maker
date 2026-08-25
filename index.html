@@ -339,6 +339,7 @@
             font-weight: bold;
             line-height: 1;
         }
+        .advanced-toggle label { cursor: pointer; }
 
         .advanced-section {
             display: none;
@@ -473,6 +474,31 @@
         .toast.success { border-color: var(--success); }
         .toast.error { border-color: var(--danger); }
         .toast.info { border-color: #555; }
+
+        .progress-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2500;
+            background: rgba(0, 0, 0, 0.72);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .progress-overlay.visible { display: flex; }
+        .progress-card {
+            width: min(440px, 100%);
+            padding: 24px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background: #111;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+        }
+        .progress-card h3 { margin-bottom: 8px; color: var(--text); font-size: 1rem; }
+        .progress-card p { min-height: 24px; margin-bottom: 14px; color: var(--text-muted); font-size: 0.88rem; word-break: break-word; }
+        .progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-input); border: 1px solid var(--border); }
+        .progress-bar { width: 0; height: 100%; background: var(--text); transition: width 0.15s ease; }
+        .progress-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
         .toolbar {
             display: flex;
@@ -910,9 +936,9 @@
         </div>
 
         <!-- 高级选项开关 -->
-        <div class="advanced-toggle" onclick="document.getElementById('advancedOptions').classList.toggle('visible');">
-            <input type="checkbox" id="advancedCheck" onchange="event.stopPropagation()">
-            <span data-i18n="showAdvanced">显示高级选项 (Shadow / Shape / colorTex 高级参数)</span>
+        <div class="advanced-toggle">
+            <input type="checkbox" id="advancedCheck" aria-controls="advancedOptions" aria-expanded="false" onchange="setAdvancedOptions(this.checked)">
+            <label for="advancedCheck" data-i18n="showAdvanced">显示高级选项 (Shadow / Shape / colorTex 高级参数)</label>
         </div>
 
         <!-- 涂装列表 -->
@@ -1249,7 +1275,17 @@
     </div>
 
     <!-- Toast -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- 长任务进度与取消控制 -->
+    <div class="progress-overlay" id="taskProgress" aria-hidden="true">
+        <div class="progress-card" role="dialog" aria-modal="true" aria-labelledby="progressTitle" aria-describedby="progressMessage">
+            <h3 id="progressTitle">处理中</h3>
+            <p id="progressMessage">正在准备…</p>
+            <div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="progress-actions"><button class="btn btn-secondary" type="button" onclick="cancelActiveTask()" data-i18n="cancelTask">取消处理</button></div>
+        </div>
+    </div>
 
     <script>
         // ===== 国际化系统 =====
@@ -1343,6 +1379,14 @@
                 toastImportFail: '导入失败：', toastPackNameRequired: '请输入包显示名称！',
                 toastAddOneTex: '请至少添加一个涂装！', toastGenerating: '正在生成涂装包...',
                 toastGenerated: '涂装包已生成！', toastGenFail: '生成失败：',
+                toastTaskCancelled: '处理已取消，当前项目未被覆盖。',
+                toastNameSanitized: '名称包含不支持的文件路径字符，已自动调整。',
+                toastDuplicateName: '涂装名称已存在，请使用不同名称。',
+                toastFileTooLarge: '文件过大：', toastImageTooLarge: '图片尺寸过大：',
+                toastTooManyFiles: '文件数量超过上限。', toastZipTooLarge: 'ZIP 文件或解压后内容超过安全上限。',
+                toastUnsafeZipPath: 'ZIP 中包含不安全的文件路径。',
+                progressPreparing: '正在准备…', progressBatchTitle: '正在导入图片', progressImportTitle: '正在解析涂装包', progressExportTitle: '正在生成涂装包',
+                progressProcessing: '正在处理', cancelTask: '取消处理',
                 origDim: '原始', output: '输出', size: '尺寸', original: '原始',
                 unnamed: '未命名', lockRatioTitle: '锁定/解锁宽高比'
             },
@@ -1435,6 +1479,14 @@
                 toastImportFail: 'Import failed: ', toastPackNameRequired: 'Please enter a pack display name!',
                 toastAddOneTex: 'Please add at least one texture!', toastGenerating: 'Generating texture pack...',
                 toastGenerated: 'Texture pack generated!', toastGenFail: 'Generation failed: ',
+                toastTaskCancelled: 'Processing cancelled. Your current project was not overwritten.',
+                toastNameSanitized: 'Unsupported file-path characters were adjusted in the name.',
+                toastDuplicateName: 'A texture with this name already exists. Use a different name.',
+                toastFileTooLarge: 'File is too large: ', toastImageTooLarge: 'Image dimensions are too large: ',
+                toastTooManyFiles: 'The file count exceeds the safe limit.', toastZipTooLarge: 'The ZIP file or its uncompressed content exceeds the safe limit.',
+                toastUnsafeZipPath: 'The ZIP contains an unsafe file path.',
+                progressPreparing: 'Preparing…', progressBatchTitle: 'Importing images', progressImportTitle: 'Parsing texture pack', progressExportTitle: 'Generating texture pack',
+                progressProcessing: 'Processing', cancelTask: 'Cancel processing',
                 origDim: 'Original', output: 'Output', size: 'Size', original: 'original',
                 unnamed: 'Unnamed', lockRatioTitle: 'Lock/Unlock aspect ratio'
             }
@@ -1509,6 +1561,150 @@
         let packIconFile = null;
         let tempFiles = { color: null, shadow: null, shape: null };
         let tempSegments = []; // 当前编辑的 segments
+
+        const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
+        const LIMITS = Object.freeze({
+            maxImageBytes: 20 * 1024 * 1024,
+            maxImagePixels: 16 * 1024 * 1024,
+            maxBatchImages: 100,
+            maxBatchBytes: 200 * 1024 * 1024,
+            maxZipBytes: 100 * 1024 * 1024,
+            maxZipEntries: 1000,
+            maxZipUncompressedBytes: 300 * 1024 * 1024,
+            maxNameLength: 80,
+            maxTagLength: 48,
+            maxTags: 20
+        });
+        let activeTask = null;
+        const previewObjectUrls = new Set();
+
+        class TaskCancelledError extends Error {
+            constructor() {
+                super('TASK_CANCELLED');
+                this.name = 'TaskCancelledError';
+            }
+        }
+
+        function setAdvancedOptions(checked) {
+            const checkbox = document.getElementById('advancedCheck');
+            const panel = document.getElementById('advancedOptions');
+            checkbox.checked = !!checked;
+            checkbox.setAttribute('aria-expanded', String(!!checked));
+            panel.classList.toggle('visible', !!checked);
+        }
+
+        function startTask(titleKey) {
+            const task = { cancelled: false };
+            activeTask = task;
+            const overlay = document.getElementById('taskProgress');
+            overlay.classList.add('visible');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.getElementById('progressTitle').textContent = t(titleKey);
+            document.getElementById('progressMessage').textContent = t('progressPreparing');
+            document.getElementById('progressBar').style.width = '0%';
+            return task;
+        }
+
+        function updateTaskProgress(task, completed, total, detail = '') {
+            assertTaskActive(task);
+            const safeTotal = Math.max(1, total || 1);
+            const progress = Math.min(100, Math.round((completed / safeTotal) * 100));
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressMessage').textContent = detail || (t('progressProcessing') + ' ' + completed + '/' + safeTotal);
+        }
+
+        function cancelActiveTask() {
+            if (!activeTask) return;
+            activeTask.cancelled = true;
+            document.getElementById('progressMessage').textContent = t('toastTaskCancelled');
+        }
+
+        function assertTaskActive(task) {
+            if (task && task.cancelled) throw new TaskCancelledError();
+        }
+
+        function finishTask(task) {
+            if (activeTask !== task) return;
+            const overlay = document.getElementById('taskProgress');
+            overlay.classList.remove('visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            activeTask = null;
+        }
+
+        function isTaskCancelledError(error) {
+            return error instanceof TaskCancelledError || (error && error.name === 'TaskCancelledError');
+        }
+
+        function yieldToUI() {
+            return new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'\"]/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[char]);
+        }
+
+        function sanitizeFileStem(value, fallback = 'texture') {
+            const cleaned = String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g, '')
+                .trim().replace(/[\\/:*?"<>|]/g, '_').replace(/\.{2,}/g, '_')
+                .replace(/\s+/g, ' ').replace(/^[. ]+|[. ]+$/g, '').slice(0, LIMITS.maxNameLength);
+            return cleaned || fallback;
+        }
+
+        function normalizeTags(tags, fallback = []) {
+            const source = Array.isArray(tags) ? tags : fallback;
+            const unique = new Set();
+            return source.map(tag => String(tag ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, LIMITS.maxTagLength))
+                .filter(tag => tag && !unique.has(tag) && unique.add(tag)).slice(0, LIMITS.maxTags);
+        }
+
+        function createTagElement(value) {
+            const tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.dataset.value = value;
+            tag.append(document.createTextNode(value + ' '));
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.textContent = '×';
+            removeButton.setAttribute('aria-label', t('delete'));
+            removeButton.addEventListener('click', () => tag.remove());
+            tag.append(removeButton);
+            return tag;
+        }
+
+        function renderTagEditor(tags) {
+            const container = document.getElementById('tagInput');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = t('phTagInput');
+            input.addEventListener('keydown', handleTagInput);
+            const fragment = document.createDocumentFragment();
+            normalizeTags(tags, ['tank', 'cone', 'fairing', 'probe']).forEach(value => fragment.append(createTagElement(value)));
+            fragment.append(input);
+            container.replaceChildren(fragment);
+        }
+
+        function getUniqueTextureName(rawName, editingIndex = -1) {
+            const name = sanitizeFileStem(rawName);
+            if (textures.some((tex, index) => index !== editingIndex && tex.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+                return null;
+            }
+            return name;
+        }
+
+        function isImageFile(file) {
+            return file && (IMAGE_TYPES.includes(file.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name));
+        }
+
+        function assertImageFileSize(file) {
+            if (file.size > LIMITS.maxImageBytes) throw new Error(t('toastFileTooLarge') + file.name + ' (' + formatBytes(file.size) + ')');
+        }
+
+        function isSafeZipPath(path) {
+            const value = String(path || '');
+            return value && !value.includes('\u0000') && !value.includes('\\') && !value.startsWith('/') && !/^[a-zA-Z]:/.test(value) && !value.split('/').includes('..');
+        }
 
         // 尺寸相关状态
         let originalImage = null;       // 原始 Image 对象
@@ -1618,8 +1814,7 @@
             document.getElementById('packIcon').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
-                if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
+                if (!isImageFile(file)) {
                     showToast(t('toastUploadImg'), 'error');
                     e.target.value = '';
                     return;
@@ -1711,12 +1906,7 @@
                 document.getElementById('texName').value = tex.name;
                 document.getElementById('texDisplayName').value = (tex.displayName && tex.displayName !== tex.name + ' unhidden') ? tex.displayName : '';
 
-                const tagContainer = document.getElementById('tagInput');
-                tagContainer.innerHTML = '';
-                (tex.tags || ['tank', 'cone', 'fairing', 'probe']).forEach(tag => {
-                    tagContainer.innerHTML += `<span class="tag">${tag} <button onclick="removeTag(this)">&times;</button></span>`;
-                });
-                tagContainer.innerHTML += '<input type="text" placeholder="' + t('phTagInput') + '" onkeydown="handleTagInput(event)">';
+                renderTagEditor(tex.tags || ['tank', 'cone', 'fairing', 'probe']);
 
                 if (tex.colorFile) {
                     document.getElementById('texColorLabel').textContent = tex.colorFile.name + ' (' + formatBytes(tex.colorFile.size) + ')';
@@ -1779,8 +1969,7 @@
                 document.getElementById('texShapeLabel').textContent = t('uploadShapeAuto');
                 document.getElementById('texShapeLabel').classList.remove('has-file');
 
-                const tagContainer = document.getElementById('tagInput');
-                tagContainer.innerHTML = '<span class="tag">tank <button onclick="removeTag(this)">&times;</button></span><span class="tag">cone <button onclick="removeTag(this)">&times;</button></span><span class="tag">fairing <button onclick="removeTag(this)">&times;</button></span><span class="tag">probe <button onclick="removeTag(this)">&times;</button></span><input type="text" placeholder="' + t('phTagInput') + '" onkeydown="handleTagInput(event)">';
+                renderTagEditor(['tank', 'cone', 'fairing', 'probe']);
 
                 tempFiles = { color: null, shadow: null, shape: null };
                 tempSegments = [];
@@ -1824,14 +2013,18 @@
         function renderSegmentsPreview() {
             const el = document.getElementById('segmentsPreview');
             if (!el) return;
-            if (!tempSegments || tempSegments.length === 0) {
+            if (!Array.isArray(tempSegments) || tempSegments.length === 0) {
                 el.textContent = t('none');
                 return;
             }
-            el.innerHTML = tempSegments.map((s, i) => {
-                const name = s.name || ('Segment ' + (i + 1));
-                return '<div style="margin:2px 0;">• ' + name + '</div>';
-            }).join('');
+            const fragment = document.createDocumentFragment();
+            tempSegments.slice(0, LIMITS.maxTags).forEach((segment, index) => {
+                const line = document.createElement('div');
+                line.style.margin = '2px 0';
+                line.textContent = '• ' + String(segment && segment.name ? segment.name : ('Segment ' + (index + 1))).slice(0, LIMITS.maxNameLength);
+                fragment.append(line);
+            });
+            el.replaceChildren(fragment);
         }
 
         // 点击遮罩层空白区域关闭模态框
@@ -1848,45 +2041,54 @@
             originalImage = null;
         }
 
-        // 将任意图片文件转换为 PNG 格式
-        function convertToPNG(file) {
+        function loadImageFromFile(file, task = null) {
+            assertTaskActive(task);
+            assertImageFileSize(file);
             return new Promise((resolve, reject) => {
-                const name = file.name.replace(/\.[^.]+$/, '') + '.png';
-                // 已经是 PNG 直接返回
-                if (file.type === 'image/png' || file.name.toLowerCase().endsWith('.png')) {
-                    resolve(file);
-                    return;
-                }
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.naturalWidth;
-                        canvas.height = img.naturalHeight;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        canvas.toBlob(function(blob) {
-                            if (blob) {
-                                resolve(new File([blob], name, { type: 'image/png' }));
-                            } else {
-                                reject(new Error('转换失败'));
+                reader.onerror = () => reject(new Error('文件读取失败'));
+                reader.onload = event => {
+                    try { assertTaskActive(task); } catch (error) { reject(error); return; }
+                    const image = new Image();
+                    image.onerror = () => reject(new Error('图片加载失败'));
+                    image.onload = () => {
+                        try {
+                            assertTaskActive(task);
+                            const pixels = image.naturalWidth * image.naturalHeight;
+                            if (!image.naturalWidth || !image.naturalHeight || pixels > LIMITS.maxImagePixels) {
+                                throw new Error(t('toastImageTooLarge') + file.name + ' (' + image.naturalWidth + ' × ' + image.naturalHeight + ')');
                             }
-                        }, 'image/png');
+                            resolve({ image, dataUrl: event.target.result });
+                        } catch (error) { reject(error); }
                     };
-                    img.onerror = function() { reject(new Error('图片加载失败')); };
-                    img.src = e.target.result;
+                    image.src = event.target.result;
                 };
-                reader.onerror = function() { reject(new Error('文件读取失败')); };
                 reader.readAsDataURL(file);
             });
+        }
+
+        // 将任意图片文件转换为 PNG 格式，并在解码前校验资源限制
+        async function convertToPNG(file, task = null) {
+            if (!isImageFile(file)) throw new Error(t('toastUploadImg'));
+            const { image } = await loadImageFromFile(file, task);
+            assertTaskActive(task);
+            const name = sanitizeFileStem(file.name.replace(/\.[^.]+$/, ''), 'texture') + '.png';
+            if (file.type === 'image/png' || file.name.toLowerCase().endsWith('.png')) {
+                return file.name === name ? file : new File([file], name, { type: 'image/png' });
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            canvas.getContext('2d').drawImage(image, 0, 0);
+            const blob = await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('转换失败')), 'image/png'));
+            assertTaskActive(task);
+            return new File([blob], name, { type: 'image/png' });
         }
 
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
-            const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
-            if (!imageTypes.includes(file.type) && !/\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name)) {
+            if (!isImageFile(file)) {
                 showToast(t('toastUploadImg'), 'error');
                 input.value = '';
                 return;
@@ -1910,32 +2112,28 @@
             input.value = '';
         }
 
-        function loadImageForPreview(file, presetW, presetH) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    originalImage = img;
-                    originalW = img.naturalWidth;
-                    originalH = img.naturalHeight;
-                    aspectRatio = originalW / originalH;
+        async function loadImageForPreview(file, presetW, presetH) {
+            try {
+                const { image } = await loadImageFromFile(file);
+                originalImage = image;
+                originalW = image.naturalWidth;
+                originalH = image.naturalHeight;
+                aspectRatio = originalW / originalH;
 
-                    document.getElementById('colorOrigDim').textContent = '原始: ' + originalW + ' x ' + originalH;
-                    document.getElementById('resizeSection').style.display = 'block';
+                document.getElementById('colorOrigDim').textContent = t('origDim') + ': ' + originalW + ' x ' + originalH;
+                document.getElementById('resizeSection').style.display = 'block';
 
-                    if (presetW > 0 && presetH > 0) {
-                        document.getElementById('resizeW').value = presetW;
-                        document.getElementById('resizeH').value = presetH;
-                    } else {
-                        document.getElementById('resizeW').value = '';
-                        document.getElementById('resizeH').value = '';
-                    }
-
-                    renderPreview();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                if (presetW > 0 && presetH > 0) {
+                    document.getElementById('resizeW').value = presetW;
+                    document.getElementById('resizeH').value = presetH;
+                } else {
+                    document.getElementById('resizeW').value = '';
+                    document.getElementById('resizeH').value = '';
+                }
+                renderPreview();
+            } catch (error) {
+                showToast(t('toastConvertFailMsg') + error.message, 'error');
+            }
         }
 
         function renderPreview() {
@@ -2030,27 +2228,18 @@
         }
 
         function handleTagInput(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const val = e.target.value.trim();
-                if (val) {
-                    const tag = document.createElement('span');
-                    tag.className = 'tag';
-                    tag.innerHTML = `${val} <button onclick="removeTag(this)">&times;</button>`;
-                    e.target.parentNode.insertBefore(tag, e.target);
-                    e.target.value = '';
-                }
-            }
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const value = normalizeTags([e.target.value])[0];
+            if (!value) return;
+            const existing = getTags();
+            if (existing.some(tag => tag === value) || existing.length >= LIMITS.maxTags) return;
+            e.target.parentNode.insertBefore(createTagElement(value), e.target);
+            e.target.value = '';
         }
 
-        function removeTag(btn) { btn.parentElement.remove(); }
-
         function getTags() {
-            const tags = [];
-            document.querySelectorAll('#tagInput .tag').forEach(tag => {
-                tags.push(tag.childNodes[0].textContent.trim());
-            });
-            return tags;
+            return Array.from(document.querySelectorAll('#tagInput .tag')).map(tag => tag.dataset.value || '').filter(Boolean);
         }
 
         // 将图片文件缩放到指定尺寸，返回新的 PNG Blob
@@ -2088,14 +2277,23 @@
         }
 
         function saveTexture() {
-            const name = document.getElementById('texName').value.trim();
-            const displayName = document.getElementById('texDisplayName').value.trim();
+            const rawName = document.getElementById('texName').value.trim();
+            const rawDisplayName = document.getElementById('texDisplayName').value.trim();
             const index = parseInt(document.getElementById('editingIndex').value);
 
-            if (!name) {
+            if (!rawName) {
                 showToast(t('toastTexNameRequired'), 'error');
                 return;
             }
+
+            const name = getUniqueTextureName(rawName, index);
+            if (!name) {
+                showToast(t('toastDuplicateName'), 'error');
+                return;
+            }
+            if (name !== rawName) showToast(t('toastNameSanitized'), 'info');
+            document.getElementById('texName').value = name;
+            const displayName = String(rawDisplayName).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 120);
 
             if (!tempFiles.color) {
                 showToast(t('toastColorRequired'), 'error');
@@ -2140,7 +2338,7 @@
                 colorFile: tempFiles.color,
                 shadowFile: tempFiles.shadow,
                 shapeFile: tempFiles.shape,
-                tags: getTags(),
+                tags: normalizeTags(getTags()),
                 resizeW: resizeW,
                 resizeH: resizeH,
                 originalW: originalW,
@@ -2171,58 +2369,92 @@
             }
         }
 
-        // 批量导入 PNG
+        // 批量导入图片：在全部处理成功前不修改当前项目，取消时可安全回滚
+        function makeAvailableTextureName(rawName, reservedNames = []) {
+            const base = sanitizeFileStem(rawName);
+            const used = new Set([
+                ...textures.map(tex => tex.name.toLocaleLowerCase()),
+                ...reservedNames.map(name => String(name).toLocaleLowerCase())
+            ]);
+            let candidate = base;
+            let suffix = 2;
+            while (used.has(candidate.toLocaleLowerCase())) {
+                const postfix = '-' + suffix++;
+                candidate = base.slice(0, Math.max(1, LIMITS.maxNameLength - postfix.length)) + postfix;
+            }
+            return candidate;
+        }
+
         async function handleBatchImport(input) {
             const files = Array.from(input.files);
             if (!files.length) return;
-
-            const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp'];
-            const imageFiles = files.filter(f => {
-                return imageTypes.includes(f.type) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name);
-            });
-
+            const imageFiles = files.filter(isImageFile);
             if (imageFiles.length === 0) {
                 showToast(t('toastNoValidImg'), 'error');
                 input.value = '';
                 return;
             }
+            const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0);
+            if (imageFiles.length > LIMITS.maxBatchImages) {
+                showToast(t('toastTooManyFiles'), 'error');
+                input.value = '';
+                return;
+            }
+            if (totalBytes > LIMITS.maxBatchBytes) {
+                showToast(t('toastFileTooLarge') + formatBytes(totalBytes), 'error');
+                input.value = '';
+                return;
+            }
 
-            showToast(t('toastConvertingN') + imageFiles.length + t('toastImgs'), 'info');
-
-            let count = 0;
-            for (const file of imageFiles) {
-                try {
-                    const pngFile = await convertToPNG(file);
-                    const name = pngFile.name.replace(/\.png$/i, '');
-                    textures.push({
-                        name: name,
-                        displayName: name + ' unhidden',
-                        colorFile: pngFile,
-                        shadowFile: null,
-                        shapeFile: null,
-                        tags: ['tank', 'cone', 'fairing', 'probe'],
-                        resizeW: 0,
-                        resizeH: 0,
-                        originalW: 0,
-                        originalH: 0
-                    });
-                    count++;
-                } catch(e) {
-                    console.warn('转换失败:', file.name, e);
+            const task = startTask('progressBatchTitle');
+            const additions = [];
+            let failed = 0;
+            try {
+                for (let index = 0; index < imageFiles.length; index++) {
+                    const file = imageFiles[index];
+                    updateTaskProgress(task, index, imageFiles.length, t('progressProcessing') + ' ' + (index + 1) + '/' + imageFiles.length + '：' + file.name);
+                    try {
+                        const pngFile = await convertToPNG(file, task);
+                        const name = makeAvailableTextureName(pngFile.name.replace(/\.png$/i, ''), additions.map(item => item.name));
+                        additions.push({
+                            name,
+                            displayName: name + ' unhidden',
+                            colorFile: pngFile,
+                            shadowFile: null,
+                            shapeFile: null,
+                            tags: ['tank', 'cone', 'fairing', 'probe'],
+                            resizeW: 0,
+                            resizeH: 0,
+                            originalW: 0,
+                            originalH: 0
+                        });
+                    } catch (error) {
+                        if (isTaskCancelledError(error)) throw error;
+                        failed++;
+                        console.warn('图片导入失败:', file.name, error);
+                    }
+                    await yieldToUI();
                 }
+                assertTaskActive(task);
+                updateTaskProgress(task, imageFiles.length, imageFiles.length);
+                if (additions.length > 0) {
+                    textures.push(...additions);
+                    updateTextureList();
+                    updatePreview();
+                    showToast(t('toastBatchImported') + additions.length + t('toastTexs') + (failed ? '，跳过 ' + failed + ' 个文件' : ''), 'success');
+                } else {
+                    showToast(t('toastNoImgImported'), 'error');
+                }
+            } catch (error) {
+                if (isTaskCancelledError(error)) showToast(t('toastTaskCancelled'), 'info');
+                else showToast(t('toastConvertFailMsg') + error.message, 'error');
+            } finally {
+                finishTask(task);
+                input.value = '';
             }
-
-            if (count > 0) {
-                updateTextureList();
-                updatePreview();
-                showToast(t('toastBatchImported') + count + t('toastTexs'), 'success');
-            } else {
-                showToast(t('toastNoImgImported'), 'error');
-            }
-            input.value = '';
         }
 
-        // 导入涂装包（合并）
+        // 导入涂装包：先检查 ZIP 元数据，再在内存中完成解析，成功后一次性合并
         async function handleImportPack(input) {
             const file = input.files[0];
             if (!file) return;
@@ -2231,236 +2463,146 @@
                 input.value = '';
                 return;
             }
+            if (file.size > LIMITS.maxZipBytes) {
+                showToast(t('toastZipTooLarge'), 'error');
+                input.value = '';
+                return;
+            }
 
-            showToast(t('toastParsing'), 'info');
-
+            const task = startTask('progressImportTitle');
+            const additions = [];
             try {
                 const zip = await JSZip.loadAsync(file);
+                assertTaskActive(task);
                 const allPaths = Object.keys(zip.files);
-                const folders = allPaths.filter(k => k.endsWith('/'));
+                const entries = Object.values(zip.files).filter(entry => !entry.dir);
+                if (allPaths.length > LIMITS.maxZipEntries) throw new Error(t('toastTooManyFiles'));
+                if (allPaths.some(path => !isSafeZipPath(path))) throw new Error(t('toastUnsafeZipPath'));
+                const declaredUncompressedSize = entries.reduce((sum, entry) => sum + Number(entry && entry._data && entry._data.uncompressedSize || 0), 0);
+                if (declaredUncompressedSize > LIMITS.maxZipUncompressedBytes) throw new Error(t('toastZipTooLarge'));
 
-                // 1. 通过 pack_info.txt 位置确定根前缀
+                const folders = allPaths.filter(path => path.endsWith('/'));
                 let rootPrefix = '';
-                const packInfoPath = allPaths.find(k => k.toLowerCase().endsWith('pack_info.txt'));
+                const packInfoPath = allPaths.find(path => path.toLowerCase().endsWith('pack_info.txt'));
                 if (packInfoPath) {
                     const lastSlash = packInfoPath.lastIndexOf('/');
                     rootPrefix = lastSlash >= 0 ? packInfoPath.substring(0, lastSlash + 1) : '';
                 }
-
-                // 2. 查找根下的各个文件夹（支持大小写不敏感、空格差异）
-                function getFolderPath(nameVariants) {
+                const getFolderPath = nameVariants => {
                     for (const folder of folders) {
                         if (!folder.toLowerCase().startsWith(rootPrefix.toLowerCase())) continue;
                         const relative = folder.substring(rootPrefix.length).replace(/\/$/, '');
-                        const relativeNoSpace = relative.toLowerCase().replace(/\s+/g, '');
-                        for (const v of nameVariants) {
-                            if (relativeNoSpace === v.toLowerCase().replace(/\s+/g, '')) {
-                                return folder; // 返回完整路径如 "MyPack/Color Textures/"
-                            }
-                        }
+                        const normalized = relative.toLowerCase().replace(/\s+/g, '');
+                        if (nameVariants.some(value => normalized === value.toLowerCase().replace(/\s+/g, ''))) return folder;
                     }
                     return null;
-                }
-
+                };
                 const colorTexturesPath = getFolderPath(['Color Textures', 'ColorTextures']);
                 const texturesPath = getFolderPath(['Textures']);
                 const shadowTexturesPath = getFolderPath(['Shadow Textures', 'ShadowTextures']);
                 const shapeTexturesPath = getFolderPath(['Shape Textures', 'ShapeTextures']);
+                if (!colorTexturesPath || !texturesPath) throw new Error(t('toastNoColorTxt'));
 
-                // 3. 读取 pack_info.txt
                 let packInfo = null;
                 if (packInfoPath) {
-                    const content = await zip.file(packInfoPath).async('string');
-                    try { packInfo = JSON.parse(content); } catch(e) {}
+                    try { packInfo = JSON.parse(await zip.file(packInfoPath).async('string')); } catch (_) {}
                 }
+                const colorTxtFiles = allPaths.filter(path => path.toLowerCase().endsWith('.txt') && path.toLowerCase().startsWith(colorTexturesPath.toLowerCase()));
+                if (!colorTxtFiles.length) throw new Error(t('toastNoColorTxt'));
+                if (colorTxtFiles.length > LIMITS.maxBatchImages) throw new Error(t('toastTooManyFiles'));
 
-                // 4. 读取 Color Textures 下的 .txt 配置文件
-                const colorTxtFiles = allPaths.filter(k => {
-                    if (!k.toLowerCase().endsWith('.txt')) return false;
-                    if (!colorTexturesPath) return false;
-                    return k.toLowerCase().startsWith(colorTexturesPath.toLowerCase());
-                });
-
-                if (colorTxtFiles.length === 0) {
-                    showToast(t('toastNoColorTxt'), 'error');
-                    input.value = '';
-                    return;
-                }
-
-                // 5. 读取 Textures 下的所有图片（支持 png/jpg/jpeg/webp/gif/bmp，精确匹配文件夹）
                 const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
-                const textureImages = allPaths.filter(k => {
-                    const ext = k.substring(k.lastIndexOf('.')).toLowerCase();
-                    if (!imageExtensions.includes(ext)) return false;
-                    if (!texturesPath) return false;
-                    return k.toLowerCase().startsWith(texturesPath.toLowerCase());
-                });
-
-                // 将 ZIP 中的图片 blob 转为 PNG File
-                async function zipImageToPNG(zip, zipPath) {
-                    const blob = await zip.file(zipPath).async('blob');
-                    const origName = zipPath.split('/').pop();
-                    const pngName = origName.replace(/\.[^.]+$/, '.png');
-                    // 已经是 PNG 直接返回
-                    if (origName.toLowerCase().endsWith('.png')) {
-                        return new File([blob], pngName, { type: 'image/png' });
+                const textureImages = allPaths.filter(path => texturesPath && path.toLowerCase().startsWith(texturesPath.toLowerCase()) && imageExtensions.includes(path.substring(path.lastIndexOf('.')).toLowerCase()));
+                const findImagePath = requestedName => {
+                    const requested = String(requestedName || '').split(/[\/]/).pop().toLowerCase();
+                    return textureImages.find(path => path.split('/').pop().toLowerCase() === requested) || null;
+                };
+                const findByTextureStem = stem => textureImages.find(path => path.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '') === stem.toLowerCase()) || null;
+                const zipImageToPNG = async zipPath => {
+                    assertTaskActive(task);
+                    const entry = zip.file(zipPath);
+                    if (!entry) return null;
+                    const blob = await entry.async('blob');
+                    assertTaskActive(task);
+                    if (blob.size > LIMITS.maxImageBytes) throw new Error(t('toastFileTooLarge') + zipPath);
+                    const originalName = zipPath.split('/').pop();
+                    const imageFile = new File([blob], originalName, { type: blob.type || 'image/png' });
+                    return convertToPNG(imageFile, task);
+                };
+                const readOptionalMap = async (folderPath, relativePath, fallbackName, textureStem) => {
+                    if (!folderPath) return null;
+                    const configPath = folderPath + relativePath;
+                    if (!zip.files[configPath]) return null;
+                    try {
+                        const config = JSON.parse(await zip.file(configPath).async('string'));
+                        const requested = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : fallbackName + '.png';
+                        const found = findImagePath(requested) || findByTextureStem(textureStem);
+                        return found ? await zipImageToPNG(found) : null;
+                    } catch (error) {
+                        if (isTaskCancelledError(error)) throw error;
+                        return null;
                     }
-                    // 非 PNG 需要转换
-                    const file = new File([blob], origName, { type: blob.type || 'image/jpeg' });
-                    return await convertToPNG(file);
-                }
+                };
 
-                let importedCount = 0;
-
-                for (const txtPath of colorTxtFiles) {
-                    const content = await zip.file(txtPath).async('string');
-                    let config = null;
-                    try { config = JSON.parse(content); } catch(e) { continue; }
-
-                    // 从路径提取涂装名
-                    const fileName = txtPath.split('/').pop().replace(/\.txt$/i, '');
-
-                    // 从 colorTex.textures[0].texture 获取图片文件名
-                    const texName = config.colorTex && config.colorTex.textures && config.colorTex.textures[0]
-                        ? config.colorTex.textures[0].texture
-                        : (fileName + '.png');
-
-                    // 在 Textures/ 下查找对应的图片
-                    let colorFile = null;
-                    // 先按配置文件中的文件名精确匹配
-                    const imgPath = textureImages.find(p => {
-                        const fn = p.split('/').pop();
-                        return fn.toLowerCase() === texName.toLowerCase();
-                    });
-                    if (imgPath) {
-                        colorFile = await zipImageToPNG(zip, imgPath);
-                    } else {
-                        // 再按涂装名匹配（忽略扩展名）
-                        const altImgPath = textureImages.find(p => {
-                            const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
-                            return fn === fileName.toLowerCase();
-                        });
-                        if (altImgPath) {
-                            colorFile = await zipImageToPNG(zip, altImgPath);
-                        }
-                    }
-
-                    if (!colorFile) {
-                        console.warn('未找到涂装图片:', fileName, texName);
-                        continue;
-                    }
-
-                    // 读取 Shadow 和 Shape（如果有）
-                    let shadowFile = null, shapeFile = null;
-
-                    // 从 txtPath 提取相对于 Color Textures 的路径，如 "xxx.txt"
+                for (let index = 0; index < colorTxtFiles.length; index++) {
+                    assertTaskActive(task);
+                    const txtPath = colorTxtFiles[index];
+                    updateTaskProgress(task, index, colorTxtFiles.length, t('progressProcessing') + ' ' + (index + 1) + '/' + colorTxtFiles.length + '：' + txtPath.split('/').pop());
+                    let config;
+                    try { config = JSON.parse(await zip.file(txtPath).async('string')); } catch (_) { await yieldToUI(); continue; }
+                    const rawFileName = txtPath.split('/').pop().replace(/\.txt$/i, '');
+                    const name = makeAvailableTextureName(rawFileName, additions.map(item => item.name));
+                    const requestedColorName = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : rawFileName + '.png';
+                    const colorPath = findImagePath(requestedColorName) || findByTextureStem(rawFileName);
+                    if (!colorPath) { await yieldToUI(); continue; }
+                    const colorFile = await zipImageToPNG(colorPath);
                     const relativePath = txtPath.substring(colorTexturesPath.length);
-
-                    // Shadow 配置文件路径
-                    if (shadowTexturesPath) {
-                        const shadowTxtPath = shadowTexturesPath + relativePath;
-                        if (zip.files[shadowTxtPath]) {
-                            try {
-                                const sc = JSON.parse(await zip.file(shadowTxtPath).async('string'));
-                                const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
-                                    ? sc.colorTex.textures[0].texture
-                                    : (fileName + '.png');
-                                const sPng = textureImages.find(p => {
-                                    const fn = p.split('/').pop();
-                                    return fn.toLowerCase() === sName.toLowerCase();
-                                });
-                                if (sPng) {
-                                    shadowFile = await zipImageToPNG(zip, sPng);
-                                } else {
-                                    const sAlt = textureImages.find(p => {
-                                        const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
-                                        return fn === fileName.toLowerCase();
-                                    });
-                                    if (sAlt) shadowFile = await zipImageToPNG(zip, sAlt);
-                                }
-                            } catch(e) {}
-                        }
-                    }
-
-                    // Shape 配置文件路径
-                    if (shapeTexturesPath) {
-                        const shapeTxtPath = shapeTexturesPath + relativePath;
-                        if (zip.files[shapeTxtPath]) {
-                            try {
-                                const sc = JSON.parse(await zip.file(shapeTxtPath).async('string'));
-                                const sName = sc.colorTex && sc.colorTex.textures && sc.colorTex.textures[0]
-                                    ? sc.colorTex.textures[0].texture
-                                    : (fileName + '.png');
-                                const sPng = textureImages.find(p => {
-                                    const fn = p.split('/').pop();
-                                    return fn.toLowerCase() === sName.toLowerCase();
-                                });
-                                if (sPng) {
-                                    shapeFile = await zipImageToPNG(zip, sPng);
-                                } else {
-                                    const sAlt = textureImages.find(p => {
-                                        const fn = p.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '');
-                                        return fn === fileName.toLowerCase();
-                                    });
-                                    if (sAlt) shapeFile = await zipImageToPNG(zip, sAlt);
-                                }
-                            } catch(e) {}
-                        }
-                    }
-
-                    // 提取高级参数
+                    const shadowFile = await readOptionalMap(shadowTexturesPath, relativePath, rawFileName, rawFileName);
+                    const shapeFile = await readOptionalMap(shapeTexturesPath, relativePath, rawFileName, rawFileName);
+                    const colorTex = config && config.colorTex && typeof config.colorTex === 'object' ? config.colorTex : {};
                     const advParams = {};
-                    if (config.colorTex) {
-                        if (config.colorTex.ideal !== undefined) advParams.ideal = config.colorTex.ideal;
-                        if (config.colorTex.border_Bottom) advParams.border_Bottom = config.colorTex.border_Bottom;
-                        if (config.colorTex.border_Top) advParams.border_Top = config.colorTex.border_Top;
-                        if (config.colorTex.center) advParams.center = config.colorTex.center;
-                        if (config.colorTex.fixedWidth !== undefined) advParams.fixedWidth = config.colorTex.fixedWidth;
-                        if (config.colorTex.fixedWidthValue !== undefined) advParams.fixedWidthValue = config.colorTex.fixedWidthValue;
-                        if (config.colorTex.flipToLight_X !== undefined) advParams.flipToLight_X = config.colorTex.flipToLight_X;
-                        if (config.colorTex.flipToLight_Y !== undefined) advParams.flipToLight_Y = config.colorTex.flipToLight_Y;
-                        if (config.colorTex.metalTexture !== undefined) advParams.metalTexture = config.colorTex.metalTexture;
-                    }
-                    if (config.pack_Redstone_Atlas !== undefined) advParams.pack_Redstone_Atlas = config.pack_Redstone_Atlas;
-                    if (config.multiple !== undefined) advParams.multiple = config.multiple;
-
-                    // 提取 segments
-                    const segments = config.segments || [];
-
-                    textures.push({
-                        name: fileName,
-                        displayName: config.name || (fileName + ' unhidden'),
-                        colorFile: colorFile,
-                        shadowFile: shadowFile,
-                        shapeFile: shapeFile,
-                        tags: config.tags || ['tank', 'cone', 'fairing', 'probe'],
+                    ['ideal', 'border_Bottom', 'border_Top', 'center', 'fixedWidth', 'fixedWidthValue', 'flipToLight_X', 'flipToLight_Y', 'metalTexture'].forEach(key => {
+                        if (colorTex[key] !== undefined) advParams[key] = colorTex[key];
+                    });
+                    if (config && config.pack_Redstone_Atlas !== undefined) advParams.pack_Redstone_Atlas = config.pack_Redstone_Atlas;
+                    if (config && config.multiple !== undefined) advParams.multiple = config.multiple;
+                    additions.push({
+                        name,
+                        displayName: String(config && config.name ? config.name : name + ' unhidden').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 120) || name + ' unhidden',
+                        colorFile,
+                        shadowFile,
+                        shapeFile,
+                        tags: normalizeTags(config && config.tags, ['tank', 'cone', 'fairing', 'probe']),
                         resizeW: 0,
                         resizeH: 0,
                         originalW: 0,
                         originalH: 0,
-                        advParams: Object.keys(advParams).length > 0 ? advParams : undefined,
-                        segments: segments.length > 0 ? segments : undefined
+                        advParams: Object.keys(advParams).length ? advParams : undefined,
+                        segments: Array.isArray(config && config.segments) ? config.segments.slice(0, LIMITS.maxTags) : undefined
                     });
-                    importedCount++;
+                    await yieldToUI();
                 }
-
-                if (importedCount > 0) {
+                assertTaskActive(task);
+                updateTaskProgress(task, colorTxtFiles.length, colorTxtFiles.length);
+                if (additions.length) {
+                    textures.push(...additions);
                     updateTextureList();
                     updatePreview();
-                    showToast(t('toastImported') + importedCount + t('toastTexs'), 'success');
-                    // 如果原包有信息，可以更新一些字段
-                    if (packInfo && packInfo.DisplayName) {
-                        showToast(t('toastOrigPackName') + packInfo.DisplayName, 'info');
-                    }
+                    showToast(t('toastImported') + additions.length + t('toastTexs'), 'success');
+                    if (packInfo && packInfo.DisplayName) showToast(t('toastOrigPackName') + String(packInfo.DisplayName).slice(0, 120), 'info');
                 } else {
                     showToast(t('toastNoTexParsed'), 'error');
                 }
-            } catch (err) {
-                showToast(t('toastImportFail') + err.message, 'error');
-                console.error(err);
+            } catch (error) {
+                if (isTaskCancelledError(error)) showToast(t('toastTaskCancelled'), 'info');
+                else {
+                    showToast(t('toastImportFail') + error.message, 'error');
+                    console.error(error);
+                }
+            } finally {
+                finishTask(task);
+                input.value = '';
             }
-
-            input.value = '';
         }
 
         // 涂装排序
@@ -2472,209 +2614,227 @@
             updatePreview();
         }
 
+        function revokePreviewUrls() {
+            previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+            previewObjectUrls.clear();
+        }
+
+        function createActionButton(text, className, handler, label = text) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = className;
+            button.textContent = text;
+            button.setAttribute('aria-label', label);
+            button.addEventListener('click', handler);
+            return button;
+        }
+
         function updateTextureList() {
             const container = document.getElementById('textureList');
             document.getElementById('textureCount').textContent = textures.length + t('textureCount');
-
+            revokePreviewUrls();
+            const fragment = document.createDocumentFragment();
             if (textures.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>' + t('emptyTextures') + '</p></div>';
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                const message = document.createElement('p');
+                message.textContent = t('emptyTextures');
+                empty.append(message);
+                fragment.append(empty);
+                container.replaceChildren(fragment);
                 return;
             }
 
-            container.innerHTML = textures.map((tex, i) => {
-                let imgPreview = '';
-                if (tex.colorFile) {
-                    const url = URL.createObjectURL(tex.colorFile);
-                    imgPreview = `<img src="${url}" class="texture-preview-img" alt="preview">`;
+            textures.forEach((tex, index) => {
+                const card = document.createElement('div');
+                card.className = 'texture-item';
+                const header = document.createElement('div');
+                header.className = 'texture-header';
+                const details = document.createElement('div');
+                const name = document.createElement('div');
+                name.className = 'texture-name';
+                name.textContent = tex.name;
+                const meta = document.createElement('div');
+                meta.className = 'texture-meta';
+                meta.textContent = String(tex.displayName || tex.name) + ' · ' + normalizeTags(tex.tags).join(', ');
+                if (tex.shadowFile || tex.shapeFile || (tex.advParams && tex.advParams.metalTexture) || (tex.segments && tex.segments.length)) {
+                    const extras = [];
+                    if (tex.shadowFile) extras.push('Shadow');
+                    if (tex.shapeFile) extras.push('Shape');
+                    if (tex.advParams && tex.advParams.metalTexture) extras.push('Metal');
+                    if (tex.segments && tex.segments.length) extras.push('Segments: ' + tex.segments.length);
+                    meta.append(document.createTextNode(' · ' + extras.join(', ')));
                 }
-
-                let sizeInfo = '';
+                details.append(name, meta);
                 if (tex.originalW && tex.originalH) {
-                    if (tex.resizeW > 0 && tex.resizeH > 0) {
-                        sizeInfo = `${t('origDim')} ${tex.originalW}x${tex.originalH} &rarr; ${t('output')} ${tex.resizeW}x${tex.resizeH}`;
-                    } else {
-                        sizeInfo = `${t('size')} ${tex.originalW}x${tex.originalH} (${t('original')})`;
-                    }
+                    const size = document.createElement('div');
+                    size.className = 'texture-size-info';
+                    size.textContent = tex.resizeW > 0 && tex.resizeH > 0
+                        ? t('origDim') + ' ' + tex.originalW + '×' + tex.originalH + ' → ' + t('output') + ' ' + tex.resizeW + '×' + tex.resizeH
+                        : t('size') + ' ' + tex.originalW + '×' + tex.originalH + ' (' + t('original') + ')';
+                    details.append(size);
                 }
-
-                let extraInfo = '';
-                if (tex.shadowFile) extraInfo += ' <span style="color:var(--warning)">Shadow</span>';
-                if (tex.shapeFile) extraInfo += ' <span style="color:#888">Shape</span>';
-                if (tex.advParams && tex.advParams.metalTexture) extraInfo += ' <span style="color:#aaa">Metal</span>';
-                if (tex.segments && tex.segments.length > 0) extraInfo += ' <span style="color:#aaa">Segments:' + tex.segments.length + '</span>';
-
-                // 排序按钮
-                const isFirst = i === 0;
-                const isLast = i === textures.length - 1;
-                const upBtn = isFirst ? '' : `<button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="moveTexture(${i}, -1)">&#9650;</button>`;
-                const downBtn = isLast ? '' : `<button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="moveTexture(${i}, 1)">&#9660;</button>`;
-
-                return `
-                    <div class="texture-item">
-                        <div class="texture-header">
-                            <div>
-                                <div class="texture-name">${tex.name}</div>
-                                <div class="texture-meta">${tex.displayName} &middot; ${tex.tags.join(', ')}${extraInfo}</div>
-                                ${sizeInfo ? `<div class="texture-size-info">${sizeInfo}</div>` : ''}
-                            </div>
-                            <div style="display:flex; gap:6px; flex-shrink:0;">
-                                ${upBtn}${downBtn}
-                                <button class="btn btn-secondary" onclick="openTextureModal(${i})">${t('edit')}</button>
-                                <button class="btn btn-danger" onclick="deleteTexture(${i})">${t('delete')}</button>
-                            </div>
-                        </div>
-                        <div class="texture-body">
-                            ${imgPreview}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                const actions = document.createElement('div');
+                actions.style.cssText = 'display:flex; gap:6px; flex-shrink:0;';
+                if (index > 0) actions.append(createActionButton('▲', 'btn btn-secondary', () => moveTexture(index, -1), 'Move texture up'));
+                if (index < textures.length - 1) actions.append(createActionButton('▼', 'btn btn-secondary', () => moveTexture(index, 1), 'Move texture down'));
+                actions.append(createActionButton(t('edit'), 'btn btn-secondary', () => openTextureModal(index)));
+                actions.append(createActionButton(t('delete'), 'btn btn-danger', () => deleteTexture(index)));
+                header.append(details, actions);
+                const body = document.createElement('div');
+                body.className = 'texture-body';
+                if (tex.colorFile) {
+                    const image = document.createElement('img');
+                    const url = URL.createObjectURL(tex.colorFile);
+                    previewObjectUrls.add(url);
+                    image.src = url;
+                    image.className = 'texture-preview-img';
+                    image.alt = tex.name + ' preview';
+                    body.append(image);
+                }
+                card.append(header, body);
+                fragment.append(card);
+            });
+            container.replaceChildren(fragment);
         }
 
         function updatePreview() {
             const packName = document.getElementById('packName').value || t('unnamed');
-            const preview = document.getElementById('filePreview');
-
-            let html = `<span class="tree-folder">${packName}/</span>\n`;
-            html += `  <span class="tree-file">pack_info.txt</span>\n`;
-            if (packIconFile) {
-                html += `  <span class="tree-file">icon.png</span>\n`;
-            }
-            html += `  <span class="tree-folder">Color Textures/</span>\n`;
-            textures.forEach(tex => {
-                html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
-            });
-
-            const hasShadow = textures.some(t => t.shadowFile);
-            const hasShape = textures.some(t => t.shapeFile);
-
+            const lines = [packName + '/', '  pack_info.txt'];
+            if (packIconFile) lines.push('  icon.png');
+            lines.push('  Color Textures/');
+            textures.forEach(tex => lines.push('    ' + tex.name + '.txt'));
+            const hasShadow = textures.some(tex => tex.shadowFile);
+            const hasShape = textures.some(tex => tex.shapeFile);
             if (hasShadow) {
-                html += `  <span class="tree-folder">Shadow Textures/</span>\n`;
-                textures.filter(t => t.shadowFile).forEach(tex => {
-                    html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
-                });
+                lines.push('  Shadow Textures/');
+                textures.filter(tex => tex.shadowFile).forEach(tex => lines.push('    ' + tex.name + '.txt'));
             }
-
             if (hasShape) {
-                html += `  <span class="tree-folder">Shape Textures/</span>\n`;
-                textures.filter(t => t.shapeFile).forEach(tex => {
-                    html += `    <span class="tree-file">${tex.name}.txt</span>\n`;
-                });
+                lines.push('  Shape Textures/');
+                textures.filter(tex => tex.shapeFile).forEach(tex => lines.push('    ' + tex.name + '.txt'));
             }
-
-            html += `  <span class="tree-folder">Textures/</span>\n`;
+            lines.push('  Textures/');
             textures.forEach(tex => {
-                const sizeNote = (tex.resizeW > 0 && tex.resizeH > 0) ? ` [${tex.resizeW}x${tex.resizeH}]` : '';
-                html += `    <span class="tree-file">${tex.colorFile.name}${sizeNote}</span>\n`;
-                if (tex.shadowFile) html += `    <span class="tree-file">${tex.shadowFile.name}</span>\n`;
-                if (tex.shapeFile) html += `    <span class="tree-file">${tex.shapeFile.name}</span>\n`;
+                const sizeNote = tex.resizeW > 0 && tex.resizeH > 0 ? ' [' + tex.resizeW + '×' + tex.resizeH + ']' : '';
+                lines.push('    ' + tex.colorFile.name + sizeNote);
+                if (tex.shadowFile) lines.push('    ' + tex.shadowFile.name);
+                if (tex.shapeFile) lines.push('    ' + tex.shapeFile.name);
             });
-            if (packIconFile) {
-                html += `    <span class="tree-file">icon.png</span>\n`;
-            }
-
-            preview.innerHTML = html;
+            if (packIconFile) lines.push('    icon.png');
+            document.getElementById('filePreview').textContent = lines.join('\n');
         }
 
         ['packName', 'packVersion', 'packDesc', 'packAuthor'].forEach(id => {
             document.getElementById(id).addEventListener('input', updatePreview);
         });
 
-        async function generatePack() {
-            const packName = document.getElementById('packName').value.trim();
-            if (!packName) { showToast(t('toastPackNameRequired'), 'error'); return; }
-            if (textures.length === 0) { showToast(t('toastAddOneTex'), 'error'); return; }
-
-            showToast(t('toastGenerating'), 'info');
-
-            const zip = new JSZip();
-            const root = zip.folder(packName);
-            const colorFolder = root.folder('Color Textures');
-            const shadowFolder = root.folder('Shadow Textures');
-            const shapeFolder = root.folder('Shape Textures');
-            const texturesFolder = root.folder('Textures');
-
-            // pack_info.txt
-            const packInfo = {
-                DisplayName: packName,
-                Version: document.getElementById('packVersion').value || '1.0.0',
-                Description: document.getElementById('packDesc').value || '',
-                Author: document.getElementById('packAuthor').value || '',
-                ShowIcon: !!packIconFile,
-                Icon: packIconFile ? 'icon.png' : null,
-                name: '',
-                hideFlags: 0
-            };
-            root.file('pack_info.txt', JSON.stringify(packInfo, null, 2));
-            root.file('.nomedia', '');
-
-            if (packIconFile) {
-                texturesFolder.file('icon.png', packIconFile);
+        function assertOutputDimensions(width, height) {
+            if (width < 0 || height < 0 || width > 8192 || height > 8192 || (width > 0 && height > 0 && width * height > LIMITS.maxImagePixels)) {
+                throw new Error(t('toastImageTooLarge') + width + ' × ' + height);
             }
+        }
 
-            // 处理每个涂装
-            for (const tex of textures) {
-                const resizeW = tex.resizeW || 0;
-                const resizeH = tex.resizeH || 0;
-                const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH);
+        async function generatePack() {
+            const rawPackName = document.getElementById('packName').value.trim();
+            if (!rawPackName) { showToast(t('toastPackNameRequired'), 'error'); return; }
+            if (textures.length === 0) { showToast(t('toastAddOneTex'), 'error'); return; }
+            const packName = sanitizeFileStem(rawPackName, 'Texture Pack');
+            const displayName = String(rawPackName).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 120) || packName;
+            if (packName !== rawPackName) showToast(t('toastNameSanitized'), 'info');
 
-                // 使用高级参数（如果有），否则使用默认值
-                const defaultParams = {
-                    ideal: 0.0,
-                    border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
-                    border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
-                    center: { mode: 0, sizeMode: 0, size: 0.5, logoHeightPercent: 0.5, scaleLogoToFit: false },
-                    fixedWidth: false, fixedWidthValue: 1.0,
-                    flipToLight_X: false, flipToLight_Y: false,
-                    metalTexture: false, pack_Redstone_Atlas: false, multiple: false
-                };
-                const ap = Object.assign({}, defaultParams, tex.advParams || {});
-
-                const baseConfig = {
-                    colorTex: {
-                        textures: [{ texture: colorFileToUse.name, ideal: ap.ideal }],
-                        border_Bottom: ap.border_Bottom,
-                        border_Top: ap.border_Top,
-                        center: ap.center,
-                        fixedWidth: ap.fixedWidth,
-                        fixedWidthValue: ap.fixedWidthValue,
-                        flipToLight_X: ap.flipToLight_X,
-                        flipToLight_Y: ap.flipToLight_Y,
-                        metalTexture: ap.metalTexture,
-                        icon: null
-                    },
-                    tags: tex.tags,
-                    pack_Redstone_Atlas: ap.pack_Redstone_Atlas,
-                    multiple: ap.multiple,
-                    segments: tex.segments || [],
-                    name: tex.displayName,
+            const task = startTask('progressExportTitle');
+            try {
+                const zip = new JSZip();
+                const root = zip.folder(packName);
+                const colorFolder = root.folder('Color Textures');
+                const shadowFolder = root.folder('Shadow Textures');
+                const shapeFolder = root.folder('Shape Textures');
+                const texturesFolder = root.folder('Textures');
+                const packInfo = {
+                    DisplayName: displayName,
+                    Version: document.getElementById('packVersion').value || '1.0.0',
+                    Description: document.getElementById('packDesc').value || '',
+                    Author: document.getElementById('packAuthor').value || '',
+                    ShowIcon: !!packIconFile,
+                    Icon: packIconFile ? 'icon.png' : null,
+                    name: '',
                     hideFlags: 0
                 };
+                root.file('pack_info.txt', JSON.stringify(packInfo, null, 2));
+                root.file('.nomedia', '');
+                if (packIconFile) texturesFolder.file('icon.png', packIconFile);
 
-                colorFolder.file(tex.name + '.txt', JSON.stringify(baseConfig, null, 2));
-                texturesFolder.file(colorFileToUse.name, colorFileToUse);
-
-                if (tex.shadowFile) {
-                    const shadowConfig = JSON.parse(JSON.stringify(baseConfig));
-                    shadowConfig.colorTex.textures[0].texture = tex.shadowFile.name;
-                    shadowFolder.file(tex.name + '.txt', JSON.stringify(shadowConfig, null, 2));
-                    texturesFolder.file(tex.shadowFile.name, tex.shadowFile);
+                for (let index = 0; index < textures.length; index++) {
+                    const tex = textures[index];
+                    updateTaskProgress(task, index, textures.length, t('progressProcessing') + ' ' + (index + 1) + '/' + textures.length + '：' + tex.name);
+                    const resizeW = Number(tex.resizeW) || 0;
+                    const resizeH = Number(tex.resizeH) || 0;
+                    assertOutputDimensions(resizeW, resizeH);
+                    const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH);
+                    assertTaskActive(task);
+                    const colorOutputName = tex.name + '.png';
+                    const colorOutputFile = new File([colorFileToUse], colorOutputName, { type: 'image/png' });
+                    const defaultParams = {
+                        ideal: 0.0,
+                        border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                        border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
+                        center: { mode: 0, sizeMode: 0, size: 0.5, logoHeightPercent: 0.5, scaleLogoToFit: false },
+                        fixedWidth: false, fixedWidthValue: 1.0,
+                        flipToLight_X: false, flipToLight_Y: false,
+                        metalTexture: false, pack_Redstone_Atlas: false, multiple: false
+                    };
+                    const ap = Object.assign({}, defaultParams, tex.advParams || {});
+                    const baseConfig = {
+                        colorTex: {
+                            textures: [{ texture: colorOutputName, ideal: ap.ideal }],
+                            border_Bottom: ap.border_Bottom,
+                            border_Top: ap.border_Top,
+                            center: ap.center,
+                            fixedWidth: ap.fixedWidth,
+                            fixedWidthValue: ap.fixedWidthValue,
+                            flipToLight_X: ap.flipToLight_X,
+                            flipToLight_Y: ap.flipToLight_Y,
+                            metalTexture: ap.metalTexture,
+                            icon: null
+                        },
+                        tags: normalizeTags(tex.tags),
+                        pack_Redstone_Atlas: ap.pack_Redstone_Atlas,
+                        multiple: ap.multiple,
+                        segments: Array.isArray(tex.segments) ? tex.segments : [],
+                        name: String(tex.displayName || tex.name).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 120),
+                        hideFlags: 0
+                    };
+                    colorFolder.file(tex.name + '.txt', JSON.stringify(baseConfig, null, 2));
+                    texturesFolder.file(colorOutputName, colorOutputFile);
+                    if (tex.shadowFile) {
+                        const shadowOutputName = tex.name + '_shadow.png';
+                        const shadowConfig = JSON.parse(JSON.stringify(baseConfig));
+                        shadowConfig.colorTex.textures[0].texture = shadowOutputName;
+                        shadowFolder.file(tex.name + '.txt', JSON.stringify(shadowConfig, null, 2));
+                        texturesFolder.file(shadowOutputName, new File([tex.shadowFile], shadowOutputName, { type: 'image/png' }));
+                    }
+                    if (tex.shapeFile) {
+                        const shapeOutputName = tex.name + '_shape.png';
+                        const shapeConfig = JSON.parse(JSON.stringify(baseConfig));
+                        shapeConfig.colorTex.textures[0].texture = shapeOutputName;
+                        shapeFolder.file(tex.name + '.txt', JSON.stringify(shapeConfig, null, 2));
+                        texturesFolder.file(shapeOutputName, new File([tex.shapeFile], shapeOutputName, { type: 'image/png' }));
+                    }
+                    await yieldToUI();
                 }
-
-                if (tex.shapeFile) {
-                    const shapeConfig = JSON.parse(JSON.stringify(baseConfig));
-                    shapeConfig.colorTex.textures[0].texture = tex.shapeFile.name;
-                    shapeFolder.file(tex.name + '.txt', JSON.stringify(shapeConfig, null, 2));
-                    texturesFolder.file(tex.shapeFile.name, tex.shapeFile);
-                }
-            }
-
-            try {
-                const blob = await zip.generateAsync({ type: 'blob' });
+                assertTaskActive(task);
+                const blob = await zip.generateAsync({ type: 'blob' }, metadata => {
+                    updateTaskProgress(task, Math.round(metadata.percent), 100, t('progressProcessing') + ' ' + Math.round(metadata.percent) + '%');
+                });
+                assertTaskActive(task);
                 saveAs(blob, packName + '.zip');
                 showToast(t('toastGenerated'), 'success');
-            } catch (err) {
-                showToast(t('toastGenFail') + err.message, 'error');
+            } catch (error) {
+                if (isTaskCancelledError(error)) showToast(t('toastTaskCancelled'), 'info');
+                else showToast(t('toastGenFail') + error.message, 'error');
+            } finally {
+                finishTask(task);
             }
         }
     </script>
