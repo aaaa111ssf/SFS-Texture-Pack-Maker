@@ -1388,7 +1388,7 @@
                 toastBatchImported: '已批量导入 ', toastTexs: ' 个涂装', toastNoImgImported: '未能导入任何图片',
                 toastArchiveRequired: '请上传 ZIP、RAR 或 7z 格式的涂装包！', toastArchiveUnavailable: '归档解析器尚未加载完成，请稍后再试。', toastArchiveEncrypted: '该归档已加密，暂不支持导入。', toastParsing: '正在解析涂装包...',
                 progressBatchPacksTitle: '正在批量导入涂装包', batchPackSummary: '批量导入完成', batchPackSuccess: '成功导入', batchPackFailed: '导入失败', batchPackTextures: '个涂装',
-                toastNoColorTxt: '未在归档中找到 Color Textures 配置！', toastImported: '已导入 ',
+                toastNoColorTxt: '未在归档中找到 Color Textures 配置！', toastNoImportableAssets: '归档中没有可导入的图片或涂装配置。', toastImported: '已导入 ',
                 toastOrigPackName: '原包名称: ', toastNoTexParsed: '未能从归档中解析出任何涂装',
                 toastImportFail: '导入失败：', toastPackNameRequired: '请输入包显示名称！',
                 toastAddOneTex: '请至少添加一个涂装！', toastGenerating: '正在生成涂装包...',
@@ -1489,7 +1489,7 @@
                 toastBatchImported: 'Batch imported ', toastTexs: ' textures', toastNoImgImported: 'No images could be imported',
                 toastArchiveRequired: 'Please upload a ZIP, RAR, or 7z texture pack!', toastArchiveUnavailable: 'The archive reader is still loading. Please try again shortly.', toastArchiveEncrypted: 'This archive is encrypted and cannot be imported yet.', toastParsing: 'Parsing texture pack...',
                 progressBatchPacksTitle: 'Batch importing texture packs', batchPackSummary: 'Batch import complete', batchPackSuccess: 'Imported', batchPackFailed: 'Failed', batchPackTextures: 'textures',
-                toastNoColorTxt: 'No Color Textures config found in the archive!', toastImported: 'Imported ',
+                toastNoColorTxt: 'No Color Textures config found in the archive!', toastNoImportableAssets: 'The archive contains no importable images or texture configuration.', toastImported: 'Imported ',
                 toastOrigPackName: 'Original pack name: ', toastNoTexParsed: 'No textures could be parsed from the archive',
                 toastImportFail: 'Import failed: ', toastPackNameRequired: 'Please enter a pack display name!',
                 toastAddOneTex: 'Please add at least one texture!', toastGenerating: 'Generating texture pack...',
@@ -2536,6 +2536,12 @@
             return null;
         }
 
+        function getParentPath(path) {
+            const normalized = normalizeArchivePath(path).replace(/\/$/, '');
+            const slash = normalized.lastIndexOf('/');
+            return slash >= 0 ? normalized.slice(0, slash + 1) : '';
+        }
+
         function locateTexturePackLayout(entries) {
             const candidateRoots = new Set(['']);
             for (const entry of entries) {
@@ -2547,9 +2553,10 @@
             }
             for (const rootPrefix of candidateRoots) {
                 const colorTexturesPath = findFolderPrefix(entries, rootPrefix, ['Color Textures', 'ColorTextures']);
+                if (!colorTexturesPath) continue;
                 const texturesPath = findFolderPrefix(entries, rootPrefix, ['Textures']);
-                if (!colorTexturesPath || !texturesPath) continue;
                 return {
+                    mode: texturesPath ? 'modern' : 'legacy-color-folder',
                     rootPrefix,
                     colorTexturesPath,
                     texturesPath,
@@ -2557,7 +2564,30 @@
                     shapeTexturesPath: findFolderPrefix(entries, rootPrefix, ['Shape Textures', 'ShapeTextures'])
                 };
             }
-            return null;
+            const legacyConfigs = entries.filter(entry => getPathBaseName(entry.path).toLowerCase() === 'config.txt');
+            if (legacyConfigs.length) {
+                return {
+                    mode: 'legacy-config-folder',
+                    rootPrefix: '',
+                    colorTexturesPath: null,
+                    texturesPath: null,
+                    shadowTexturesPath: null,
+                    shapeTexturesPath: null
+                };
+            }
+            const imageExtensions = Object.keys(IMAGE_MIME_TYPES);
+            const imageEntries = entries.filter(entry => imageExtensions.includes((normalizeArchivePath(entry.path).match(/\.[^.]+$/) || [''])[0].toLowerCase()));
+            if (!imageEntries.length) return null;
+            const firstTopLevel = normalizeArchivePath(imageEntries[0].path).split('/').filter(Boolean)[0] || '';
+            const commonRoot = firstTopLevel && imageEntries.every(entry => normalizeArchivePath(entry.path).startsWith(firstTopLevel + '/')) ? firstTopLevel + '/' : '';
+            return {
+                mode: 'image-only',
+                rootPrefix: commonRoot,
+                colorTexturesPath: null,
+                texturesPath: null,
+                shadowTexturesPath: null,
+                shapeTexturesPath: null
+            };
         }
 
         function entryAtPath(entryMap, path) {
@@ -2580,29 +2610,52 @@
                 if (entries.some(entry => !isSafeZipPath(normalizeArchivePath(entry.path)))) throw new Error(t('toastUnsafeZipPath'));
                 const entryMap = new Map(entries.map(entry => [normalizeArchivePath(entry.path).toLowerCase(), entry]));
                 const layout = locateTexturePackLayout(entries);
-                if (!layout) throw new Error(t('toastNoColorTxt'));
+                if (!layout) throw new Error(t('toastNoImportableAssets'));
 
                 const packInfoEntry = entryAtPath(entryMap, layout.rootPrefix + 'pack_info.txt');
                 let packInfo = null;
                 if (packInfoEntry) {
                     try { packInfo = await readArchiveJson(packInfoEntry); } catch (_) {}
                 }
-                const colorTxtEntries = entries.filter(entry => {
-                    const path = normalizeArchivePath(entry.path);
-                    return path.toLowerCase().startsWith(layout.colorTexturesPath.toLowerCase()) && path.toLowerCase().endsWith('.txt');
-                });
+                const imageExtensions = Object.keys(IMAGE_MIME_TYPES);
+                const colorTxtEntries = layout.mode === 'image-only'
+                    ? entries.filter(entry => imageExtensions.includes((normalizeArchivePath(entry.path).match(/\.[^.]+$/) || [''])[0].toLowerCase())).map(entry => ({
+                        path: normalizeArchivePath(entry.path).replace(/\.[^.]+$/, '.txt'),
+                        sourceImageEntry: entry
+                    }))
+                    : entries.filter(entry => {
+                        const entryPath = normalizeArchivePath(entry.path);
+                        if (layout.mode === 'modern') return entryPath.toLowerCase().startsWith(layout.colorTexturesPath.toLowerCase()) && entryPath.toLowerCase().endsWith('.txt');
+                        return getPathBaseName(entryPath).toLowerCase() === 'config.txt';
+                    });
                 if (!colorTxtEntries.length) throw new Error(t('toastNoColorTxt'));
 
-                const imageExtensions = Object.keys(IMAGE_MIME_TYPES);
                 const textureImages = entries.filter(entry => {
-                    const path = normalizeArchivePath(entry.path);
-                    return path.toLowerCase().startsWith(layout.texturesPath.toLowerCase()) && imageExtensions.includes((path.match(/\.[^.]+$/) || [''])[0].toLowerCase());
+                    const entryPath = normalizeArchivePath(entry.path);
+                    const isImage = imageExtensions.includes((entryPath.match(/\.[^.]+$/) || [''])[0].toLowerCase());
+                    return isImage && (!layout.texturesPath || entryPath.toLowerCase().startsWith(layout.texturesPath.toLowerCase()) || layout.mode !== 'modern');
                 });
-                const findImageEntry = requestedName => {
-                    const requested = getPathBaseName(requestedName).toLowerCase();
+                const findImageEntry = (requestedName, configPath = '') => {
+                    const requestedPath = normalizeArchivePath(requestedName);
+                    const candidatePaths = [
+                        getParentPath(configPath) + requestedPath,
+                        layout.rootPrefix + requestedPath,
+                        requestedPath
+                    ].filter(Boolean);
+                    for (const candidate of candidatePaths) {
+                        const exact = entryAtPath(entryMap, candidate);
+                        if (exact && textureImages.includes(exact)) return exact;
+                    }
+                    const requested = getPathBaseName(requestedPath).toLowerCase();
                     return textureImages.find(entry => getPathBaseName(entry.path).toLowerCase() === requested) || null;
                 };
-                const findByTextureStem = stem => textureImages.find(entry => getPathBaseName(entry.path).toLowerCase().replace(/\.[^.]+$/, '') === String(stem).toLowerCase()) || null;
+                const findByTextureStem = (stem, configPath = '') => {
+                    const expected = String(stem).toLowerCase();
+                    const configDir = getParentPath(configPath).toLowerCase();
+                    return textureImages.find(entry => normalizeArchivePath(entry.path).toLowerCase().startsWith(configDir) && getPathBaseName(entry.path).toLowerCase().replace(/\.[^.]+$/, '') === expected)
+                        || textureImages.find(entry => getPathBaseName(entry.path).toLowerCase().replace(/\.[^.]+$/, '') === expected)
+                        || null;
+                };
                 const archiveImageToPNG = async entry => {
                     assertTaskActive(task);
                     if (!entry) return null;
@@ -2617,7 +2670,7 @@
                     try {
                         const config = await readArchiveJson(configEntry);
                         const requested = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : fallbackName + '.png';
-                        const found = findImageEntry(requested) || findByTextureStem(textureStem);
+                        const found = findImageEntry(requested, configEntry.path) || findByTextureStem(textureStem, configEntry.path);
                         return found ? await archiveImageToPNG(found) : null;
                     } catch (error) {
                         if (isTaskCancelledError(error)) throw error;
@@ -2633,14 +2686,19 @@
                     if (onProgress) onProgress(index, colorTxtEntries.length, progressText);
                     else updateTaskProgress(task, index, colorTxtEntries.length, progressText);
                     let config;
-                    try { config = await readArchiveJson(txtEntry); } catch (_) { await yieldToUI(); continue; }
-                    const rawFileName = getPathBaseName(txtPath).replace(/\.txt$/i, '');
+                    if (txtEntry.sourceImageEntry) {
+                        config = { colorTex: { textures: [{ texture: txtEntry.sourceImageEntry.path }] }, tags: ['tank', 'cone', 'fairing', 'probe'] };
+                    } else {
+                        try { config = await readArchiveJson(txtEntry); } catch (_) { await yieldToUI(); continue; }
+                    }
+                    const configFileStem = getPathBaseName(txtPath).replace(/\.txt$/i, '');
+                    const rawFileName = configFileStem.toLowerCase() === 'config' ? getPathBaseName(getParentPath(txtPath)) : configFileStem;
                     const name = makeAvailableTextureName(rawFileName, reservedNames.concat(additions.map(item => item.name)));
                     const requestedColorName = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : rawFileName + '.png';
-                    const colorEntry = findImageEntry(requestedColorName) || findByTextureStem(rawFileName);
+                    const colorEntry = findImageEntry(requestedColorName, txtPath) || findByTextureStem(rawFileName, txtPath);
                     if (!colorEntry) { await yieldToUI(); continue; }
                     const colorFile = await archiveImageToPNG(colorEntry);
-                    const relativePath = txtPath.substring(layout.colorTexturesPath.length);
+                    const relativePath = layout.colorTexturesPath && txtPath.toLowerCase().startsWith(layout.colorTexturesPath.toLowerCase()) ? txtPath.substring(layout.colorTexturesPath.length) : getPathBaseName(txtPath);
                     const shadowFile = await readOptionalMap(layout.shadowTexturesPath, relativePath, rawFileName, rawFileName);
                     const shapeFile = await readOptionalMap(layout.shapeTexturesPath, relativePath, rawFileName, rawFileName);
                     const colorTex = config && config.colorTex && typeof config.colorTex === 'object' ? config.colorTex : {};
