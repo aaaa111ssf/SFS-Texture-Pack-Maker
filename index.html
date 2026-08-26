@@ -13,6 +13,7 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script type="module" src="archive-loader.js"></script>
     <style>
         :root {
             --bg: #000000;
@@ -967,7 +968,7 @@
                 <button class="btn btn-secondary" onclick="document.getElementById('importPackInput').click();" data-i18n="importPack">
                     导入涂装包
                 </button>
-                <input type="file" id="importPackInput" accept=".zip" style="display:none" onchange="handleImportPack(this)">
+                <input type="file" id="importPackInput" accept=".zip,.rar,.7z,application/zip,application/x-rar-compressed,application/vnd.rar,application/x-7z-compressed" style="display:none" onchange="handleImportPack(this)">
             </div>
         </div>
 
@@ -1310,7 +1311,7 @@
                 emptyTextures: '还没有添加涂装，点击下方按钮添加',
                 addTexture: '+ 添加涂装',
                 batchImport: '批量导入图片',
-                importPack: '导入涂装包',
+                importPack: '导入涂装包 (ZIP / RAR / 7z)',
                 filePreview: '文件结构预览',
                 downloadPack: '下载涂装包 (ZIP)',
                 advParamHelp: '高级参数说明 (点击展开)',
@@ -1373,9 +1374,9 @@
                 toastTexAdded: '涂装已添加', toastTexUpdated: '涂装已更新', toastTexDeleted: '涂装已删除',
                 toastNoValidImg: '未找到有效的图片文件！', toastConvertingN: '正在转换 ', toastImgs: ' 张图片...',
                 toastBatchImported: '已批量导入 ', toastTexs: ' 个涂装', toastNoImgImported: '未能导入任何图片',
-                toastZipRequired: '请上传 ZIP 格式的涂装包！', toastParsing: '正在解析涂装包...',
-                toastNoColorTxt: '未在 ZIP 中找到 Color Textures 配置！', toastImported: '已导入 ',
-                toastOrigPackName: '原包名称: ', toastNoTexParsed: '未能从 ZIP 中解析出任何涂装',
+                toastArchiveRequired: '请上传 ZIP、RAR 或 7z 格式的涂装包！', toastArchiveUnavailable: '归档解析器尚未加载完成，请稍后再试。', toastArchiveEncrypted: '该归档已加密，暂不支持导入。', toastParsing: '正在解析涂装包...',
+                toastNoColorTxt: '未在归档中找到 Color Textures 配置！', toastImported: '已导入 ',
+                toastOrigPackName: '原包名称: ', toastNoTexParsed: '未能从归档中解析出任何涂装',
                 toastImportFail: '导入失败：', toastPackNameRequired: '请输入包显示名称！',
                 toastAddOneTex: '请至少添加一个涂装！', toastGenerating: '正在生成涂装包...',
                 toastGenerated: '涂装包已生成！', toastGenFail: '生成失败：',
@@ -1410,7 +1411,7 @@
                 emptyTextures: 'No textures yet. Click the button below to add one.',
                 addTexture: '+ Add Texture',
                 batchImport: 'Batch Import Images',
-                importPack: 'Import Pack',
+                importPack: 'Import Pack (ZIP / RAR / 7z)',
                 filePreview: 'File Structure Preview',
                 downloadPack: 'Download Pack (ZIP)',
                 advParamHelp: 'Advanced Parameters (click to expand)',
@@ -1473,9 +1474,9 @@
                 toastTexAdded: 'Texture added', toastTexUpdated: 'Texture updated', toastTexDeleted: 'Texture deleted',
                 toastNoValidImg: 'No valid image files found!', toastConvertingN: 'Converting ', toastImgs: ' images...',
                 toastBatchImported: 'Batch imported ', toastTexs: ' textures', toastNoImgImported: 'No images could be imported',
-                toastZipRequired: 'Please upload a ZIP texture pack!', toastParsing: 'Parsing texture pack...',
-                toastNoColorTxt: 'No Color Textures config found in ZIP!', toastImported: 'Imported ',
-                toastOrigPackName: 'Original pack name: ', toastNoTexParsed: 'No textures could be parsed from ZIP',
+                toastArchiveRequired: 'Please upload a ZIP, RAR, or 7z texture pack!', toastArchiveUnavailable: 'The archive reader is still loading. Please try again shortly.', toastArchiveEncrypted: 'This archive is encrypted and cannot be imported yet.', toastParsing: 'Parsing texture pack...',
+                toastNoColorTxt: 'No Color Textures config found in the archive!', toastImported: 'Imported ',
+                toastOrigPackName: 'Original pack name: ', toastNoTexParsed: 'No textures could be parsed from the archive',
                 toastImportFail: 'Import failed: ', toastPackNameRequired: 'Please enter a pack display name!',
                 toastAddOneTex: 'Please add at least one texture!', toastGenerating: 'Generating texture pack...',
                 toastGenerated: 'Texture pack generated!', toastGenFail: 'Generation failed: ',
@@ -2431,99 +2432,209 @@
             }
         }
 
-        // 导入涂装包：先检查 ZIP 元数据，再在内存中完成解析，成功后一次性合并
+        const ARCHIVE_EXTENSIONS = new Set(['zip', 'rar', '7z']);
+        const IMAGE_MIME_TYPES = Object.freeze({
+            '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
+            '.gif': 'image/gif', '.bmp': 'image/bmp'
+        });
+
+        function getArchiveExtension(fileName) {
+            const match = String(fileName || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+            return match ? match[1] : '';
+        }
+
+        function normalizeArchivePath(path) {
+            return String(path || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/{2,}/g, '/');
+        }
+
+        function getPathBaseName(path) {
+            return normalizeArchivePath(path).split('/').filter(Boolean).pop() || '';
+        }
+
+        function getImageMimeType(fileName) {
+            const extension = (getPathBaseName(fileName).match(/\.[^.]+$/) || [''])[0].toLowerCase();
+            return IMAGE_MIME_TYPES[extension] || 'application/octet-stream';
+        }
+
+        function isFileEntry(entry) {
+            return entry && !entry.isDirectory && !normalizeArchivePath(entry.path).endsWith('/');
+        }
+
+        async function openImportArchive(file, task) {
+            const extension = getArchiveExtension(file.name);
+            if (!ARCHIVE_EXTENSIONS.has(extension)) throw new Error(t('toastArchiveRequired'));
+            if (extension === 'zip') {
+                const zip = await JSZip.loadAsync(file);
+                assertTaskActive(task);
+                const entries = Object.entries(zip.files).map(([rawPath, zipEntry]) => {
+                    const path = normalizeArchivePath(rawPath);
+                    return {
+                        path,
+                        isDirectory: !!zipEntry.dir,
+                        async getFile() {
+                            const entry = zip.file(rawPath);
+                            if (!entry) throw new Error('Archive entry not found: ' + path);
+                            const blob = await entry.async('blob');
+                            return new File([blob], getPathBaseName(path), { type: getImageMimeType(path) });
+                        }
+                    };
+                });
+                return { format: 'ZIP', entries, close: async () => {} };
+            }
+
+            if (!window.archiveLibraryReady) throw new Error(t('toastArchiveUnavailable'));
+            const Archive = await window.archiveLibraryReady;
+            assertTaskActive(task);
+            const archive = await Archive.open(file);
+            try {
+                if (await archive.hasEncryptedData()) throw new Error(t('toastArchiveEncrypted'));
+                const rawEntries = await archive.getFilesArray();
+                const entries = rawEntries.map(({ file: compressedFile, path: folderPath }) => {
+                    const path = normalizeArchivePath(String(folderPath || '') + String(compressedFile.name || ''));
+                    return {
+                        path,
+                        isDirectory: false,
+                        async getFile() {
+                            const extracted = await compressedFile.extract();
+                            return new File([extracted], getPathBaseName(path), { type: getImageMimeType(path) });
+                        }
+                    };
+                });
+                return { format: extension.toUpperCase(), entries, close: () => archive.close() };
+            } catch (error) {
+                await archive.close();
+                throw error;
+            }
+        }
+
+        function findFolderPrefix(entries, rootPrefix, variants) {
+            const rootSegments = normalizeArchivePath(rootPrefix).replace(/\/$/, '').split('/').filter(Boolean);
+            const normalizedVariants = variants.map(value => value.toLowerCase().replace(/\s+/g, ''));
+            for (const entry of entries) {
+                const parts = normalizeArchivePath(entry.path).split('/').filter(Boolean);
+                if (parts.length <= rootSegments.length) continue;
+                if (rootSegments.some((segment, index) => parts[index].toLowerCase() !== segment.toLowerCase())) continue;
+                const folderName = parts[rootSegments.length];
+                if (normalizedVariants.includes(folderName.toLowerCase().replace(/\s+/g, ''))) {
+                    return parts.slice(0, rootSegments.length + 1).join('/') + '/';
+                }
+            }
+            return null;
+        }
+
+        function locateTexturePackLayout(entries) {
+            const candidateRoots = new Set(['']);
+            for (const entry of entries) {
+                const parts = normalizeArchivePath(entry.path).split('/').filter(Boolean);
+                for (let index = 0; index < parts.length - 1; index++) {
+                    const normalized = parts[index].toLowerCase().replace(/\s+/g, '');
+                    if (normalized === 'colortextures') candidateRoots.add(parts.slice(0, index).join('/') + (index ? '/' : ''));
+                }
+            }
+            for (const rootPrefix of candidateRoots) {
+                const colorTexturesPath = findFolderPrefix(entries, rootPrefix, ['Color Textures', 'ColorTextures']);
+                const texturesPath = findFolderPrefix(entries, rootPrefix, ['Textures']);
+                if (!colorTexturesPath || !texturesPath) continue;
+                return {
+                    rootPrefix,
+                    colorTexturesPath,
+                    texturesPath,
+                    shadowTexturesPath: findFolderPrefix(entries, rootPrefix, ['Shadow Textures', 'ShadowTextures']),
+                    shapeTexturesPath: findFolderPrefix(entries, rootPrefix, ['Shape Textures', 'ShapeTextures'])
+                };
+            }
+            return null;
+        }
+
+        function entryAtPath(entryMap, path) {
+            return entryMap.get(normalizeArchivePath(path).toLowerCase()) || null;
+        }
+
+        async function readArchiveJson(entry) {
+            const file = await entry.getFile();
+            return JSON.parse(await file.text());
+        }
+
+        // 导入涂装包：ZIP 使用 JSZip；RAR/7z 使用本地 WebAssembly 归档阅读器；目录可处于任意嵌套层级。
         async function handleImportPack(input) {
             const file = input.files[0];
             if (!file) return;
-            if (!file.name.toLowerCase().endsWith('.zip')) {
-                showToast(t('toastZipRequired'), 'error');
+            if (!ARCHIVE_EXTENSIONS.has(getArchiveExtension(file.name))) {
+                showToast(t('toastArchiveRequired'), 'error');
                 input.value = '';
                 return;
             }
             const task = startTask('progressImportTitle');
             const additions = [];
+            let archive = null;
             try {
-                const zip = await JSZip.loadAsync(file);
+                archive = await openImportArchive(file, task);
                 assertTaskActive(task);
-                const allPaths = Object.keys(zip.files);
-                if (allPaths.some(path => !isSafeZipPath(path))) throw new Error(t('toastUnsafeZipPath'));
+                const entries = archive.entries.filter(isFileEntry);
+                if (entries.some(entry => !isSafeZipPath(normalizeArchivePath(entry.path)))) throw new Error(t('toastUnsafeZipPath'));
+                const entryMap = new Map(entries.map(entry => [normalizeArchivePath(entry.path).toLowerCase(), entry]));
+                const layout = locateTexturePackLayout(entries);
+                if (!layout) throw new Error(t('toastNoColorTxt'));
 
-                const folders = allPaths.filter(path => path.endsWith('/'));
-                let rootPrefix = '';
-                const packInfoPath = allPaths.find(path => path.toLowerCase().endsWith('pack_info.txt'));
-                if (packInfoPath) {
-                    const lastSlash = packInfoPath.lastIndexOf('/');
-                    rootPrefix = lastSlash >= 0 ? packInfoPath.substring(0, lastSlash + 1) : '';
-                }
-                const getFolderPath = nameVariants => {
-                    for (const folder of folders) {
-                        if (!folder.toLowerCase().startsWith(rootPrefix.toLowerCase())) continue;
-                        const relative = folder.substring(rootPrefix.length).replace(/\/$/, '');
-                        const normalized = relative.toLowerCase().replace(/\s+/g, '');
-                        if (nameVariants.some(value => normalized === value.toLowerCase().replace(/\s+/g, ''))) return folder;
-                    }
-                    return null;
-                };
-                const colorTexturesPath = getFolderPath(['Color Textures', 'ColorTextures']);
-                const texturesPath = getFolderPath(['Textures']);
-                const shadowTexturesPath = getFolderPath(['Shadow Textures', 'ShadowTextures']);
-                const shapeTexturesPath = getFolderPath(['Shape Textures', 'ShapeTextures']);
-                if (!colorTexturesPath || !texturesPath) throw new Error(t('toastNoColorTxt'));
-
+                const packInfoEntry = entryAtPath(entryMap, layout.rootPrefix + 'pack_info.txt');
                 let packInfo = null;
-                if (packInfoPath) {
-                    try { packInfo = JSON.parse(await zip.file(packInfoPath).async('string')); } catch (_) {}
+                if (packInfoEntry) {
+                    try { packInfo = await readArchiveJson(packInfoEntry); } catch (_) {}
                 }
-                const colorTxtFiles = allPaths.filter(path => path.toLowerCase().endsWith('.txt') && path.toLowerCase().startsWith(colorTexturesPath.toLowerCase()));
-                if (!colorTxtFiles.length) throw new Error(t('toastNoColorTxt'));
+                const colorTxtEntries = entries.filter(entry => {
+                    const path = normalizeArchivePath(entry.path);
+                    return path.toLowerCase().startsWith(layout.colorTexturesPath.toLowerCase()) && path.toLowerCase().endsWith('.txt');
+                });
+                if (!colorTxtEntries.length) throw new Error(t('toastNoColorTxt'));
 
-                const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'];
-                const textureImages = allPaths.filter(path => texturesPath && path.toLowerCase().startsWith(texturesPath.toLowerCase()) && imageExtensions.includes(path.substring(path.lastIndexOf('.')).toLowerCase()));
-                const findImagePath = requestedName => {
-                    const requested = String(requestedName || '').split(/[\/]/).pop().toLowerCase();
-                    return textureImages.find(path => path.split('/').pop().toLowerCase() === requested) || null;
+                const imageExtensions = Object.keys(IMAGE_MIME_TYPES);
+                const textureImages = entries.filter(entry => {
+                    const path = normalizeArchivePath(entry.path);
+                    return path.toLowerCase().startsWith(layout.texturesPath.toLowerCase()) && imageExtensions.includes((path.match(/\.[^.]+$/) || [''])[0].toLowerCase());
+                });
+                const findImageEntry = requestedName => {
+                    const requested = getPathBaseName(requestedName).toLowerCase();
+                    return textureImages.find(entry => getPathBaseName(entry.path).toLowerCase() === requested) || null;
                 };
-                const findByTextureStem = stem => textureImages.find(path => path.split('/').pop().toLowerCase().replace(/\.[^.]+$/, '') === stem.toLowerCase()) || null;
-                const zipImageToPNG = async zipPath => {
+                const findByTextureStem = stem => textureImages.find(entry => getPathBaseName(entry.path).toLowerCase().replace(/\.[^.]+$/, '') === String(stem).toLowerCase()) || null;
+                const archiveImageToPNG = async entry => {
                     assertTaskActive(task);
-                    const entry = zip.file(zipPath);
                     if (!entry) return null;
-                    const blob = await entry.async('blob');
+                    const imageFile = await entry.getFile();
                     assertTaskActive(task);
-                    const originalName = zipPath.split('/').pop();
-                    const imageFile = new File([blob], originalName, { type: blob.type || 'image/png' });
                     return convertToPNG(imageFile, task);
                 };
                 const readOptionalMap = async (folderPath, relativePath, fallbackName, textureStem) => {
                     if (!folderPath) return null;
-                    const configPath = folderPath + relativePath;
-                    if (!zip.files[configPath]) return null;
+                    const configEntry = entryAtPath(entryMap, folderPath + relativePath);
+                    if (!configEntry) return null;
                     try {
-                        const config = JSON.parse(await zip.file(configPath).async('string'));
+                        const config = await readArchiveJson(configEntry);
                         const requested = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : fallbackName + '.png';
-                        const found = findImagePath(requested) || findByTextureStem(textureStem);
-                        return found ? await zipImageToPNG(found) : null;
+                        const found = findImageEntry(requested) || findByTextureStem(textureStem);
+                        return found ? await archiveImageToPNG(found) : null;
                     } catch (error) {
                         if (isTaskCancelledError(error)) throw error;
                         return null;
                     }
                 };
 
-                for (let index = 0; index < colorTxtFiles.length; index++) {
+                for (let index = 0; index < colorTxtEntries.length; index++) {
                     assertTaskActive(task);
-                    const txtPath = colorTxtFiles[index];
-                    updateTaskProgress(task, index, colorTxtFiles.length, t('progressProcessing') + ' ' + (index + 1) + '/' + colorTxtFiles.length + '：' + txtPath.split('/').pop());
+                    const txtEntry = colorTxtEntries[index];
+                    const txtPath = normalizeArchivePath(txtEntry.path);
+                    updateTaskProgress(task, index, colorTxtEntries.length, t('progressProcessing') + ' ' + (index + 1) + '/' + colorTxtEntries.length + '：' + getPathBaseName(txtPath));
                     let config;
-                    try { config = JSON.parse(await zip.file(txtPath).async('string')); } catch (_) { await yieldToUI(); continue; }
-                    const rawFileName = txtPath.split('/').pop().replace(/\.txt$/i, '');
+                    try { config = await readArchiveJson(txtEntry); } catch (_) { await yieldToUI(); continue; }
+                    const rawFileName = getPathBaseName(txtPath).replace(/\.txt$/i, '');
                     const name = makeAvailableTextureName(rawFileName, additions.map(item => item.name));
                     const requestedColorName = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : rawFileName + '.png';
-                    const colorPath = findImagePath(requestedColorName) || findByTextureStem(rawFileName);
-                    if (!colorPath) { await yieldToUI(); continue; }
-                    const colorFile = await zipImageToPNG(colorPath);
-                    const relativePath = txtPath.substring(colorTexturesPath.length);
-                    const shadowFile = await readOptionalMap(shadowTexturesPath, relativePath, rawFileName, rawFileName);
-                    const shapeFile = await readOptionalMap(shapeTexturesPath, relativePath, rawFileName, rawFileName);
+                    const colorEntry = findImageEntry(requestedColorName) || findByTextureStem(rawFileName);
+                    if (!colorEntry) { await yieldToUI(); continue; }
+                    const colorFile = await archiveImageToPNG(colorEntry);
+                    const relativePath = txtPath.substring(layout.colorTexturesPath.length);
+                    const shadowFile = await readOptionalMap(layout.shadowTexturesPath, relativePath, rawFileName, rawFileName);
+                    const shapeFile = await readOptionalMap(layout.shapeTexturesPath, relativePath, rawFileName, rawFileName);
                     const colorTex = config && config.colorTex && typeof config.colorTex === 'object' ? config.colorTex : {};
                     const advParams = {};
                     ['ideal', 'border_Bottom', 'border_Top', 'center', 'fixedWidth', 'fixedWidthValue', 'flipToLight_X', 'flipToLight_Y', 'metalTexture'].forEach(key => {
@@ -2548,7 +2659,7 @@
                     await yieldToUI();
                 }
                 assertTaskActive(task);
-                updateTaskProgress(task, colorTxtFiles.length, colorTxtFiles.length);
+                updateTaskProgress(task, colorTxtEntries.length, colorTxtEntries.length);
                 if (additions.length) {
                     textures.push(...additions);
                     updateTextureList();
@@ -2565,6 +2676,7 @@
                     console.error(error);
                 }
             } finally {
+                try { if (archive) await archive.close(); } catch (error) { console.warn('归档关闭失败：', error); }
                 finishTask(task);
                 input.value = '';
             }
