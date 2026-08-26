@@ -957,6 +957,11 @@
                 </div>
             </div>
 
+            <div id="textureListControls" style="display:flex; justify-content:flex-end; gap:8px; margin:0 0 10px;" hidden>
+                <button id="expandTextureListBtn" class="btn btn-secondary" type="button" onclick="expandTextureList()" data-i18n="expandAllTextures">展开全部</button>
+                <button id="collapseTextureListBtn" class="btn btn-secondary" type="button" onclick="collapseTextureList()" data-i18n="collapseAllTextures">收起全部</button>
+            </div>
+
             <div id="textureList">
                 <div class="empty-state">
                     <p data-i18n="emptyTextures">还没有添加涂装，点击下方按钮添加</p>
@@ -1322,7 +1327,7 @@
                 textureCount: '个涂装',
                 emptyTextures: '还没有添加涂装，点击下方按钮添加',
                 addTexture: '+ 添加涂装',
-                batchImport: '批量导入图片',
+                batchImport: '批量导入图片', expandAllTextures: '展开全部', collapseAllTextures: '收起全部',
                 importPack: '导入涂装包 (ZIP / RAR / 7z)', batchImportPacks: '批量导入涂装包',
                 filePreview: '文件结构预览',
                 downloadPack: '下载涂装包 (ZIP)',
@@ -1423,7 +1428,7 @@
                 textureCount: ' textures',
                 emptyTextures: 'No textures yet. Click the button below to add one.',
                 addTexture: '+ Add Texture',
-                batchImport: 'Batch Import Images',
+                batchImport: 'Batch Import Images', expandAllTextures: 'Expand All', collapseAllTextures: 'Collapse All',
                 importPack: 'Import Pack (ZIP / RAR / 7z)', batchImportPacks: 'Batch Import Packs',
                 filePreview: 'File Structure Preview',
                 downloadPack: 'Download Pack (ZIP)',
@@ -2868,9 +2873,30 @@
             return button;
         }
 
+        let areTextureDetailsExpanded = true;
+
+        function setTextureListExpanded(expanded) {
+            areTextureDetailsExpanded = !!expanded;
+            updateTextureList();
+        }
+
+        function expandTextureList() { setTextureListExpanded(true); }
+        function collapseTextureList() { setTextureListExpanded(false); }
+
+        function updateTextureListControls() {
+            const controls = document.getElementById('textureListControls');
+            const expandButton = document.getElementById('expandTextureListBtn');
+            const collapseButton = document.getElementById('collapseTextureListBtn');
+            const hasTextures = textures.length > 0;
+            controls.hidden = !hasTextures;
+            expandButton.hidden = !hasTextures || areTextureDetailsExpanded;
+            collapseButton.hidden = !hasTextures || !areTextureDetailsExpanded;
+        }
+
         function updateTextureList() {
             const container = document.getElementById('textureList');
             document.getElementById('textureCount').textContent = textures.length + t('textureCount');
+            updateTextureListControls();
             revokePreviewUrls();
             const fragment = document.createDocumentFragment();
             if (textures.length === 0) {
@@ -2922,6 +2948,7 @@
                 header.append(details, actions);
                 const body = document.createElement('div');
                 body.className = 'texture-body';
+                body.hidden = !areTextureDetailsExpanded;
                 if (tex.colorFile) {
                     const image = document.createElement('img');
                     const url = URL.createObjectURL(tex.colorFile);
