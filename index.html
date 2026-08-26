@@ -501,6 +501,12 @@
         .progress-bar { width: 0; height: 100%; background: var(--text); transition: width 0.15s ease; }
         .progress-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
 
+        .import-summary { display: none; margin: 16px 0 4px; padding: 12px 14px; border: 1px solid var(--border); border-left: 3px solid var(--text-muted); border-radius: 6px; background: var(--bg-input); }
+        .import-summary.visible { display: block; }
+        .import-summary h3 { margin-bottom: 6px; font-size: 0.9rem; color: var(--text); }
+        .import-summary p, .import-summary li { color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; }
+        .import-summary ul { max-height: 120px; overflow-y: auto; margin: 8px 0 0 18px; }
+
         .toolbar {
             display: flex;
             justify-content: space-between;
@@ -957,6 +963,8 @@
                 </div>
             </div>
 
+            <div id="importSummary" class="import-summary" role="status" aria-live="polite"></div>
+
             <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="openTextureModal()" data-i18n="addTexture">
                     + 添加涂装
@@ -969,6 +977,10 @@
                     导入涂装包
                 </button>
                 <input type="file" id="importPackInput" accept=".zip,.rar,.7z,application/zip,application/x-rar-compressed,application/vnd.rar,application/x-7z-compressed" style="display:none" onchange="handleImportPack(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('batchImportPackInput').click();" data-i18n="batchImportPacks">
+                    批量导入涂装包
+                </button>
+                <input type="file" id="batchImportPackInput" accept=".zip,.rar,.7z,application/zip,application/x-rar-compressed,application/vnd.rar,application/x-7z-compressed" multiple style="display:none" onchange="handleBatchImportPacks(this)">
             </div>
         </div>
 
@@ -1311,7 +1323,7 @@
                 emptyTextures: '还没有添加涂装，点击下方按钮添加',
                 addTexture: '+ 添加涂装',
                 batchImport: '批量导入图片',
-                importPack: '导入涂装包 (ZIP / RAR / 7z)',
+                importPack: '导入涂装包 (ZIP / RAR / 7z)', batchImportPacks: '批量导入涂装包',
                 filePreview: '文件结构预览',
                 downloadPack: '下载涂装包 (ZIP)',
                 advParamHelp: '高级参数说明 (点击展开)',
@@ -1375,6 +1387,7 @@
                 toastNoValidImg: '未找到有效的图片文件！', toastConvertingN: '正在转换 ', toastImgs: ' 张图片...',
                 toastBatchImported: '已批量导入 ', toastTexs: ' 个涂装', toastNoImgImported: '未能导入任何图片',
                 toastArchiveRequired: '请上传 ZIP、RAR 或 7z 格式的涂装包！', toastArchiveUnavailable: '归档解析器尚未加载完成，请稍后再试。', toastArchiveEncrypted: '该归档已加密，暂不支持导入。', toastParsing: '正在解析涂装包...',
+                progressBatchPacksTitle: '正在批量导入涂装包', batchPackSummary: '批量导入完成', batchPackSuccess: '成功导入', batchPackFailed: '导入失败', batchPackTextures: '个涂装',
                 toastNoColorTxt: '未在归档中找到 Color Textures 配置！', toastImported: '已导入 ',
                 toastOrigPackName: '原包名称: ', toastNoTexParsed: '未能从归档中解析出任何涂装',
                 toastImportFail: '导入失败：', toastPackNameRequired: '请输入包显示名称！',
@@ -1411,7 +1424,7 @@
                 emptyTextures: 'No textures yet. Click the button below to add one.',
                 addTexture: '+ Add Texture',
                 batchImport: 'Batch Import Images',
-                importPack: 'Import Pack (ZIP / RAR / 7z)',
+                importPack: 'Import Pack (ZIP / RAR / 7z)', batchImportPacks: 'Batch Import Packs',
                 filePreview: 'File Structure Preview',
                 downloadPack: 'Download Pack (ZIP)',
                 advParamHelp: 'Advanced Parameters (click to expand)',
@@ -1475,6 +1488,7 @@
                 toastNoValidImg: 'No valid image files found!', toastConvertingN: 'Converting ', toastImgs: ' images...',
                 toastBatchImported: 'Batch imported ', toastTexs: ' textures', toastNoImgImported: 'No images could be imported',
                 toastArchiveRequired: 'Please upload a ZIP, RAR, or 7z texture pack!', toastArchiveUnavailable: 'The archive reader is still loading. Please try again shortly.', toastArchiveEncrypted: 'This archive is encrypted and cannot be imported yet.', toastParsing: 'Parsing texture pack...',
+                progressBatchPacksTitle: 'Batch importing texture packs', batchPackSummary: 'Batch import complete', batchPackSuccess: 'Imported', batchPackFailed: 'Failed', batchPackTextures: 'textures',
                 toastNoColorTxt: 'No Color Textures config found in the archive!', toastImported: 'Imported ',
                 toastOrigPackName: 'Original pack name: ', toastNoTexParsed: 'No textures could be parsed from the archive',
                 toastImportFail: 'Import failed: ', toastPackNameRequired: 'Please enter a pack display name!',
@@ -2556,15 +2570,7 @@
         }
 
         // 导入涂装包：ZIP 使用 JSZip；RAR/7z 使用本地 WebAssembly 归档阅读器；目录可处于任意嵌套层级。
-        async function handleImportPack(input) {
-            const file = input.files[0];
-            if (!file) return;
-            if (!ARCHIVE_EXTENSIONS.has(getArchiveExtension(file.name))) {
-                showToast(t('toastArchiveRequired'), 'error');
-                input.value = '';
-                return;
-            }
-            const task = startTask('progressImportTitle');
+        async function importTexturePackFile(file, task, reservedNames = [], onProgress = null) {
             const additions = [];
             let archive = null;
             try {
@@ -2623,11 +2629,13 @@
                     assertTaskActive(task);
                     const txtEntry = colorTxtEntries[index];
                     const txtPath = normalizeArchivePath(txtEntry.path);
-                    updateTaskProgress(task, index, colorTxtEntries.length, t('progressProcessing') + ' ' + (index + 1) + '/' + colorTxtEntries.length + '：' + getPathBaseName(txtPath));
+                    const progressText = t('progressProcessing') + ' ' + (index + 1) + '/' + colorTxtEntries.length + '：' + getPathBaseName(txtPath);
+                    if (onProgress) onProgress(index, colorTxtEntries.length, progressText);
+                    else updateTaskProgress(task, index, colorTxtEntries.length, progressText);
                     let config;
                     try { config = await readArchiveJson(txtEntry); } catch (_) { await yieldToUI(); continue; }
                     const rawFileName = getPathBaseName(txtPath).replace(/\.txt$/i, '');
-                    const name = makeAvailableTextureName(rawFileName, additions.map(item => item.name));
+                    const name = makeAvailableTextureName(rawFileName, reservedNames.concat(additions.map(item => item.name)));
                     const requestedColorName = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : rawFileName + '.png';
                     const colorEntry = findImageEntry(requestedColorName) || findByTextureStem(rawFileName);
                     if (!colorEntry) { await yieldToUI(); continue; }
@@ -2659,24 +2667,120 @@
                     await yieldToUI();
                 }
                 assertTaskActive(task);
-                updateTaskProgress(task, colorTxtEntries.length, colorTxtEntries.length);
-                if (additions.length) {
-                    textures.push(...additions);
-                    updateTextureList();
-                    updatePreview();
-                    showToast(t('toastImported') + additions.length + t('toastTexs'), 'success');
-                    if (packInfo && packInfo.DisplayName) showToast(t('toastOrigPackName') + String(packInfo.DisplayName).slice(0, 120), 'info');
-                } else {
-                    showToast(t('toastNoTexParsed'), 'error');
-                }
+                if (onProgress) onProgress(colorTxtEntries.length, colorTxtEntries.length, t('progressProcessing'));
+                else updateTaskProgress(task, colorTxtEntries.length, colorTxtEntries.length);
+                if (!additions.length) throw new Error(t('toastNoTexParsed'));
+                return { additions, packInfo };
+            } finally {
+                try { if (archive) await archive.close(); } catch (error) { console.warn('归档关闭失败：', error); }
+            }
+        }
+
+        function renderBatchImportSummary(successes, failures, textureCount) {
+            const summary = document.getElementById('importSummary');
+            summary.replaceChildren();
+            if (!successes.length && !failures.length) {
+                summary.classList.remove('visible');
+                return;
+            }
+            const title = document.createElement('h3');
+            title.textContent = t('batchPackSummary');
+            const message = document.createElement('p');
+            message.textContent = t('batchPackSuccess') + ' ' + successes.length + ' / ' + (successes.length + failures.length) + '，' + textureCount + ' ' + t('batchPackTextures');
+            summary.append(title, message);
+            if (failures.length) {
+                const failedTitle = document.createElement('p');
+                failedTitle.textContent = t('batchPackFailed') + ' (' + failures.length + ')';
+                const list = document.createElement('ul');
+                failures.forEach(item => {
+                    const line = document.createElement('li');
+                    line.textContent = item.name + ' — ' + item.message;
+                    list.append(line);
+                });
+                summary.append(failedTitle, list);
+            }
+            summary.classList.add('visible');
+        }
+
+        function applyImportedTextures(additions) {
+            if (!additions.length) return;
+            textures.push(...additions);
+            updateTextureList();
+            updatePreview();
+        }
+
+        async function handleImportPack(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (!ARCHIVE_EXTENSIONS.has(getArchiveExtension(file.name))) {
+                showToast(t('toastArchiveRequired'), 'error');
+                input.value = '';
+                return;
+            }
+            const task = startTask('progressImportTitle');
+            try {
+                const result = await importTexturePackFile(file, task, textures.map(item => item.name));
+                assertTaskActive(task);
+                applyImportedTextures(result.additions);
+                renderBatchImportSummary([{ name: file.name }], [], result.additions.length);
+                showToast(t('toastImported') + result.additions.length + t('toastTexs'), 'success');
+                if (result.packInfo && result.packInfo.DisplayName) showToast(t('toastOrigPackName') + String(result.packInfo.DisplayName).slice(0, 120), 'info');
             } catch (error) {
                 if (isTaskCancelledError(error)) showToast(t('toastTaskCancelled'), 'info');
-                else {
+                else { showToast(t('toastImportFail') + error.message, 'error'); console.error(error); }
+            } finally {
+                finishTask(task);
+                input.value = '';
+            }
+        }
+
+        async function handleBatchImportPacks(input) {
+            const files = Array.from(input.files);
+            if (!files.length) return;
+            const task = startTask('progressBatchPacksTitle');
+            const successes = [];
+            const failures = [];
+            const additions = [];
+            try {
+                for (let index = 0; index < files.length; index++) {
+                    assertTaskActive(task);
+                    const file = files[index];
+                    if (!ARCHIVE_EXTENSIONS.has(getArchiveExtension(file.name))) {
+                        failures.push({ name: file.name, message: t('toastArchiveRequired') });
+                        continue;
+                    }
+                    const total = files.length;
+                    const prefix = (index + 1) + '/' + total + ' ' + file.name;
+                    updateTaskProgress(task, index, total, prefix);
+                    try {
+                        const result = await importTexturePackFile(file, task, textures.map(item => item.name).concat(additions.map(item => item.name)), (current, count, detail) => {
+                            const fraction = count ? current / count : 0;
+                            updateTaskProgress(task, index + fraction, total, prefix + ' — ' + detail);
+                        });
+                        additions.push(...result.additions);
+                        successes.push({ name: file.name, textures: result.additions.length });
+                    } catch (error) {
+                        if (isTaskCancelledError(error)) throw error;
+                        failures.push({ name: file.name, message: String(error.message || error).slice(0, 180) });
+                        console.warn('涂装包导入失败:', file.name, error);
+                    }
+                    await yieldToUI();
+                }
+                assertTaskActive(task);
+                updateTaskProgress(task, files.length, files.length, t('progressProcessing'));
+                applyImportedTextures(additions);
+                renderBatchImportSummary(successes, failures, additions.length);
+                if (additions.length) showToast(t('toastImported') + additions.length + t('toastTexs'), 'success');
+                else if (failures.length) showToast(t('batchPackFailed') + '：' + failures.length, 'error');
+            } catch (error) {
+                if (isTaskCancelledError(error)) {
+                    renderBatchImportSummary(successes, failures, additions.length);
+                    showToast(t('toastTaskCancelled'), 'info');
+                } else {
                     showToast(t('toastImportFail') + error.message, 'error');
                     console.error(error);
                 }
             } finally {
-                try { if (archive) await archive.close(); } catch (error) { console.warn('归档关闭失败：', error); }
                 finishTask(task);
                 input.value = '';
             }
