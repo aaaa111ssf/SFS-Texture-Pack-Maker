@@ -5,6 +5,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
+    <!-- 本地开发/反复改动期间禁用缓存，避免改完看不到最新效果（部署前可删） -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
     <title>SFS 涂装包制作器</title>
@@ -30,9 +34,93 @@
             --warning: #ffcc00;
             --border: #3a3a3a;
             --border-light: #555;
+
+            /* 语义色：替代散落在各处的硬编码颜色，方便整体切换主题 */
+            --on-accent: #000000;
+            --on-strong: #ffffff;
+            --bg-elevated: #2a2a2a;
+            --bg-sunken: #050505;
+            --bg-modal: #111111;
+            --text-strong: #eeeeee;
+            --text-heading: #dddddd;
+            --text-subtle: #999999;
+            --text-faint: #888888;
+            --checker-a: #1a1a1a;
+            --checker-b: #111111;
+            --overlay-strong: rgba(0, 0, 0, 0.8);
+            --overlay-soft: rgba(0, 0, 0, 0.72);
+            --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.45);
+        }
+
+        /* ===== 白天模式（浅色主题）：只覆盖变量，深色外观完全不变 ===== */
+        body.light-mode {
+            --bg: #f2f4f7;
+            --bg-card: #ffffff;
+            --bg-hover: #e8ecf1;
+            --bg-input: #ffffff;
+            --text: #14181f;
+            --text-muted: #5a6270;
+            --text-dim: #8b94a2;
+            --accent: #14181f;
+            --accent-hover: #39414d;
+            --danger: #cf3a30;
+            --success: #1a8a4a;
+            --warning: #a8740b;
+            --border: #dde2e9;
+            --border-light: #bfc7d2;
+
+            --on-accent: #ffffff;
+            --on-strong: #ffffff;
+            --bg-elevated: #e6ebf1;
+            --bg-sunken: #eef1f5;
+            --bg-modal: #ffffff;
+            --text-strong: #14181f;
+            --text-heading: #2c333d;
+            --text-subtle: #7c8592;
+            --text-faint: #98a1ad;
+            --checker-a: #e1e6ec;
+            --checker-b: #f3f5f8;
+            --overlay-strong: rgba(18, 24, 33, 0.45);
+            --overlay-soft: rgba(18, 24, 33, 0.4);
+            --shadow-modal: 0 16px 40px rgba(18, 24, 33, 0.16);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* 组件自带的 display（如 .btn 的 inline-flex）会覆盖 hidden 属性，
+           这里统一兜底，否则展开/收起按钮的 hidden 不生效。 */
+        [hidden] { display: none !important; }
+
+        .texture-list-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin: 0 0 10px;
+        }
+
+        /* 顶部主题切换按钮 */
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text);
+            cursor: pointer;
+            flex: 0 0 auto;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        .theme-toggle:hover { border-color: var(--accent); }
+
+        /* 用类名控制图标显隐：SVG 元素没有 hidden 属性，靠 JS 设 .hidden 不会生效 */
+        .theme-toggle svg { display: block; }
+        body.light-mode #themeIconSun { display: none; }
+        body:not(.light-mode) #themeIconMoon { display: none; }
 
         html {
             height: 100%;
@@ -71,7 +159,7 @@
         header h1 {
             font-size: 2.2rem;
             font-weight: 700;
-            color: #fff;
+            color: var(--text);
             letter-spacing: -0.5px;
             margin-bottom: 8px;
         }
@@ -94,7 +182,7 @@
 
         .qq-group-link:hover {
             color: var(--text);
-            border-color: #fff;
+            border-color: var(--accent);
             background: var(--bg-hover);
         }
 
@@ -113,7 +201,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #ccc;
+            color: var(--text-muted);
         }
 
         .card h2 .icon {
@@ -184,7 +272,7 @@
         }
 
         .file-input-wrapper:hover .file-input-label {
-            border-color: #555;
+            border-color: var(--border-light);
             color: var(--text);
         }
 
@@ -212,30 +300,30 @@
             color: var(--text);
         }
 
-        .btn:hover { background: #2a2a2a; }
+        .btn:hover { background: var(--bg-elevated); }
 
         .btn-primary {
-            background: #fff;
-            color: #000;
-            border-color: #fff;
+            background: var(--accent);
+            color: var(--on-accent);
+            border-color: var(--accent);
             font-weight: 600;
         }
 
-        .btn-primary:hover { background: #ddd; border-color: #ddd; }
+        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
         .btn-danger { border-color: var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: var(--danger); color: var(--on-strong); }
 
         .btn-success {
-            background: #fff;
-            color: #000;
-            border-color: #fff;
+            background: var(--accent);
+            color: var(--on-accent);
+            border-color: var(--accent);
             font-weight: 600;
         }
-        .btn-success:hover { background: #ddd; }
+        .btn-success:hover { background: var(--accent-hover); }
 
         .btn-secondary { background: var(--bg-hover); color: var(--text-muted); }
-        .btn-secondary:hover { background: #2a2a2a; color: var(--text); }
+        .btn-secondary:hover { background: var(--bg-elevated); color: var(--text); }
 
         .texture-item {
             background: var(--bg-input);
@@ -255,7 +343,7 @@
             margin-bottom: 12px;
         }
 
-        .texture-name { font-weight: 600; font-size: 1.05rem; color: #eee; }
+        .texture-name { font-weight: 600; font-size: 1.05rem; color: var(--text-strong); }
 
         .texture-meta {
             color: var(--text-muted);
@@ -276,7 +364,7 @@
             object-fit: contain;
             border-radius: 4px;
             border: 1px solid var(--border);
-            background: #050505;
+            background: var(--bg-sunken);
         }
 
         .texture-size-info {
@@ -300,8 +388,8 @@
             line-height: 1.8;
         }
 
-        .tree-file { color: #999; }
-        .tree-folder { color: #ddd; font-weight: 600; }
+        .tree-file { color: var(--text-subtle); }
+        .tree-folder { color: var(--text-heading); font-weight: 600; }
 
         .advanced-toggle {
             display: flex;
@@ -317,10 +405,10 @@
 
         .advanced-toggle input {
             width: 18px; height: 18px;
-            accent-color: #fff;
+            accent-color: var(--accent);
             -webkit-appearance: none;
             appearance: none;
-            border: 2px solid #fff;
+            border: 2px solid var(--accent);
             border-radius: 3px;
             background: transparent;
             cursor: pointer;
@@ -328,14 +416,14 @@
             vertical-align: middle;
         }
         .advanced-toggle input:checked {
-            background: #fff;
+            background: var(--accent);
         }
         .advanced-toggle input:checked::after {
             content: '✓';
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: #000;
+            color: var(--on-accent);
             font-size: 12px;
             font-weight: bold;
             line-height: 1;
@@ -370,8 +458,8 @@
         }
 
         .tag {
-            background: #333;
-            color: #ccc;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
             padding: 4px 12px;
             border-radius: 4px;
             font-size: 0.82rem;
@@ -383,13 +471,13 @@
         .tag button {
             background: none;
             border: none;
-            color: #888;
+            color: var(--text-faint);
             cursor: pointer;
             font-size: 1rem;
             line-height: 1;
         }
 
-        .tag button:hover { color: #fff; }
+        .tag button:hover { color: var(--text); }
 
         .tag-input input {
             background: transparent;
@@ -416,8 +504,9 @@
             width: 100%; height: 100%;
             width: 100vw; height: 100vh;
             height: 100dvh;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
+            background: var(--overlay-strong);
+            /* 必须高于固定的顶栏控件(1500)，弹窗打开时把它盖住 */
+            z-index: 1600;
             justify-content: center;
             align-items: center;
             -webkit-overflow-scrolling: touch;
@@ -426,7 +515,7 @@
         .modal-overlay.visible { display: flex; }
 
         .modal {
-            background: #111;
+            background: var(--bg-modal);
             border: 1px solid var(--border-light);
             border-radius: 10px;
             padding: 28px;
@@ -442,7 +531,7 @@
         .modal h3 {
             margin-bottom: 20px;
             font-weight: 600;
-            color: #ddd;
+            color: var(--text-heading);
         }
 
         .modal-actions {
@@ -460,28 +549,28 @@
             right: 20px;
             padding: 12px 20px;
             border-radius: 6px;
-            color: #fff;
+            color: var(--text);
             font-weight: 500;
             font-size: 0.9rem;
             z-index: 2000;
             transform: translateY(100px);
             opacity: 0;
             transition: all 0.3s;
-            background: #333;
+            background: var(--bg-elevated);
             border: 1px solid var(--border-light);
         }
 
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { border-color: var(--success); }
         .toast.error { border-color: var(--danger); }
-        .toast.info { border-color: #555; }
+        .toast.info { border-color: var(--border-light); }
 
         .progress-overlay {
             display: none;
             position: fixed;
             inset: 0;
             z-index: 2500;
-            background: rgba(0, 0, 0, 0.72);
+            background: var(--overlay-soft);
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -492,8 +581,8 @@
             padding: 24px;
             border: 1px solid var(--border-light);
             border-radius: 10px;
-            background: #111;
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+            background: var(--bg-modal);
+            box-shadow: var(--shadow-modal);
         }
         .progress-card h3 { margin-bottom: 8px; color: var(--text); font-size: 1rem; }
         .progress-card p { min-height: 24px; margin-bottom: 14px; color: var(--text-muted); font-size: 0.88rem; word-break: break-word; }
@@ -540,7 +629,7 @@
             border: 1px solid var(--border);
             object-fit: cover;
             margin-top: 8px;
-            background: #050505;
+            background: var(--bg-sunken);
         }
 
         /* 尺寸调节区域 */
@@ -622,7 +711,7 @@
         }
 
         .preset-chip:hover {
-            border-color: #555;
+            border-color: var(--border-light);
             color: var(--text);
         }
 
@@ -656,7 +745,7 @@
             max-height: 260px;
             border: 1px solid var(--border);
             border-radius: 4px;
-            background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 16px 16px;
+            background: repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 0 / 16px 16px;
         }
 
         .preview-canvas-area .canvas-info {
@@ -668,7 +757,7 @@
         .original-dim {
             display: inline-block;
             padding: 2px 8px;
-            background: #1a1a1a;
+            background: var(--checker-a);
             border-radius: 3px;
             font-size: 0.78rem;
             color: var(--text-muted);
@@ -718,10 +807,10 @@
         .adv-param-grid .checkbox-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
-            accent-color: #fff;
+            accent-color: var(--accent);
             -webkit-appearance: none;
             appearance: none;
-            border: 2px solid #fff;
+            border: 2px solid var(--accent);
             border-radius: 3px;
             background: transparent;
             cursor: pointer;
@@ -730,14 +819,14 @@
             flex-shrink: 0;
         }
         .adv-param-grid .checkbox-group input[type="checkbox"]:checked {
-            background: #fff;
+            background: var(--accent);
         }
         .adv-param-grid .checkbox-group input[type="checkbox"]:checked::after {
             content: '✓';
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: #000;
+            color: var(--on-accent);
             font-size: 12px;
             font-weight: bold;
             line-height: 1;
@@ -862,10 +951,15 @@
         }
 
         .lang-switcher {
-            position: fixed;
-            top: 12px;
-            right: 12px;
+            /* 锚定在标题右上方：和标题绑在一起，相对位置永远不变；
+               随页面一起滚动（不像 fixed 那样悬浮在内容上方挡视野）。 */
+            position: absolute;
+            top: 14px;
+            right: 14px;
             z-index: 1500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .lang-switcher select {
@@ -873,7 +967,8 @@
             color: var(--text);
             border: 1px solid var(--border-light);
             border-radius: 6px;
-            padding: 6px 10px;
+            padding: 0 26px 0 10px;
+            height: 34px;
             font-size: 0.82rem;
             cursor: pointer;
             outline: none;
@@ -882,18 +977,26 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 8px center;
-            padding-right: 26px;
         }
 
-        .lang-switcher select:hover { border-color: #fff; }
+        .lang-switcher select:hover { border-color: var(--accent); }
 
         @media (max-width: 768px) {
-            .lang-switcher select { font-size: 16px; padding: 8px 28px 8px 10px; }
+            header { padding-top: 58px; }
+            .lang-switcher { top: 10px; right: 10px; gap: 8px; }
+            /* 移动端全局给 select 设了 min-height: 44px，这里显式覆盖，保证和主题按钮等高 */
+            .lang-switcher select { font-size: 16px; padding: 0 28px 0 10px; height: 40px; min-height: 40px; }
+            .theme-toggle { width: 40px; height: 40px; }
+            /* 窄屏下两个示例纹理按钮并排平分，避免各占一行 */
         }
     </style>
 </head>
 <body>
     <div class="lang-switcher">
+        <button type="button" id="themeToggle" class="theme-toggle" onclick="toggleTheme()" data-i18n-title="themeToggleTitle" title="切换白天 / 夜间模式" aria-label="切换白天 / 夜间模式">
+            <svg id="themeIconSun" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="12" r="5"/><path d="M12 1.5a1 1 0 0 1 1 1v1.6a1 1 0 1 1-2 0V2.5a1 1 0 0 1 1-1zm0 18.4a1 1 0 0 1 1 1v1.6a1 1 0 1 1-2 0v-1.6a1 1 0 0 1 1-1zM2.5 11a1 1 0 0 1 1-1h1.6a1 1 0 1 1 0 2H3.5a1 1 0 0 1-1-1zm16.4 0a1 1 0 0 1 1-1h1.6a1 1 0 1 1 0 2h-1.6a1 1 0 0 1-1-1zM5.3 4a1 1 0 0 1 1.4 0l1.1 1.1a1 1 0 0 1-1.4 1.4L5.3 5.4A1 1 0 0 1 5.3 4zm11.5 11.5a1 1 0 0 1 1.4 0l1.1 1.1a1 1 0 0 1-1.4 1.4l-1.1-1.1a1 1 0 0 1 0-1.4zm1.4-11.5a1 1 0 0 1 0 1.4l-1.1 1.1a1 1 0 1 1-1.4-1.4L16.8 4a1 1 0 0 1 1.4 0zM6.7 15.5a1 1 0 0 1 0 1.4l-1.1 1.1a1 1 0 0 1-1.4-1.4l1.1-1.1a1 1 0 0 1 1.4 0z"/></svg>
+            <svg id="themeIconMoon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21.3 14.6A9 9 0 1 1 9.4 2.7a1 1 0 0 1 1.3 1.2 7 7 0 0 0 8.7 8.7 1 1 0 0 1 1.2 1.3z"/></svg>
+        </button>
         <select id="langSelect" onchange="switchLanguage(this.value)">
             <option value="zh">中文</option>
             <option value="en">English</option>
@@ -957,7 +1060,7 @@
                 </div>
             </div>
 
-            <div id="textureListControls" style="display:flex; justify-content:flex-end; gap:8px; margin:0 0 10px;" hidden>
+            <div id="textureListControls" class="texture-list-controls" hidden>
                 <button id="expandTextureListBtn" class="btn btn-secondary" type="button" onclick="expandTextureList()" data-i18n="expandAllTextures">展开全部</button>
                 <button id="collapseTextureListBtn" class="btn btn-secondary" type="button" onclick="collapseTextureList()" data-i18n="collapseAllTextures">收起全部</button>
             </div>
@@ -1074,7 +1177,7 @@
                 <div class="file-input-wrapper">
                     <input type="file" id="texColorFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'color')">
                     <div class="file-input-label" id="texColorLabel" data-i18n="uploadImgAuto">
-                        点击或拖拽上传图片 (自动转 PNG)
+                        点击或拖拽上传图片（PNG / JPG 直接用，其它格式自动转 PNG）
                     </div>
                 </div>
             </div>
@@ -1200,9 +1303,9 @@
                         <div class="form-group">
                             <label>center: mode</label>
                             <select id="adv_center_mode">
-                                <option value="0" selected="">0 - Stretch</option>
-                                <option value="1">1 - Tile</option>
-                                <option value="2">2 - Tile Fit</option>
+                                <option value="0">0 - Stretch (拉伸铺满，图案会被拉变形)</option>
+                                <option value="1" selected="">1 - Tile (平铺，保持比例 · SFS 官方模板默认)</option>
+                                <option value="2">2 - Tile Fit (平铺适配)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1268,7 +1371,7 @@
                         <div class="file-input-wrapper">
                             <input type="file" id="texShadowFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shadow')">
                             <div class="file-input-label" id="texShadowLabel" data-i18n="uploadShadowAuto">
-                                上传 Shadow 图片 (自动转 PNG)
+                                上传 Shadow 图片（PNG / JPG 直接用）
                             </div>
                         </div>
                     </div>
@@ -1278,7 +1381,7 @@
                         <div class="file-input-wrapper">
                             <input type="file" id="texShapeFile" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp" onchange="handleFileSelect(this, 'shape')">
                             <div class="file-input-label" id="texShapeLabel" data-i18n="uploadShapeAuto">
-                                上传 Shape 图片 (自动转 PNG)
+                                上传 Shape 图片（PNG / JPG 直接用）
                             </div>
                         </div>
                     </div>
@@ -1361,7 +1464,7 @@
                 texDisplayName: '显示名称 (可选，留空自动生成)',
                 phTexDisplayName: '游戏中显示的涂装名称',
                 colorTextureLabel: 'Color Texture 图片 *',
-                uploadImgAuto: '点击或拖拽上传图片 (自动转 PNG)',
+                uploadImgAuto: '点击或拖拽上传图片（PNG / JPG 直接用，其它格式自动转 PNG）',
                 width: '宽度', height: '高度', lockRatio: '锁定比例',
                 resetSize: '重置为原始尺寸', powerOf2: '2 的幂',
                 resizeHint: '留空或填 0 则不调整尺寸，直接使用原图',
@@ -1379,9 +1482,9 @@
                 colorTexAdvParams: 'colorTex 高级参数 (通常无需修改)',
                 segmentsLabel: 'Segments 分段', segmentsNote: '(导入时保留，暂不支持编辑)', none: '无',
                 shadowTexture: 'Shadow Texture 图片 (可选)',
-                uploadShadowAuto: '上传 Shadow 图片 (自动转 PNG)',
+                uploadShadowAuto: '上传 Shadow 图片（PNG / JPG 直接用）',
                 shapeTexture: 'Shape Texture 图片 (可选)',
-                uploadShapeAuto: '上传 Shape 图片 (自动转 PNG)',
+                uploadShapeAuto: '上传 Shape 图片（PNG / JPG 直接用）',
                 cancel: '取消', save: '保存', edit: '编辑', delete: '删除',
                 // 动态文本
                 toastUploadImg: '请上传图片文件！', toastConvertedPNG: '已自动转换为 PNG',
@@ -1407,7 +1510,8 @@
                 progressPreparing: '正在准备…', progressBatchTitle: '正在导入图片', progressImportTitle: '正在解析涂装包', progressExportTitle: '正在生成涂装包',
                 progressProcessing: '正在处理', cancelTask: '取消处理',
                 origDim: '原始', output: '输出', size: '尺寸', original: '原始',
-                unnamed: '未命名', lockRatioTitle: '锁定/解锁宽高比'
+                unnamed: '未命名', lockRatioTitle: '锁定/解锁宽高比',
+                themeToggleTitle: '切换白天 / 夜间模式'
             },
             en: {
                 title: 'SFS Texture Pack Maker',
@@ -1462,7 +1566,7 @@
                 texDisplayName: 'Display Name (optional, auto-generated if empty)',
                 phTexDisplayName: 'Texture name shown in-game',
                 colorTextureLabel: 'Color Texture Image *',
-                uploadImgAuto: 'Click or drag to upload image (auto PNG)',
+                uploadImgAuto: 'Click or drag to upload image (PNG / JPG kept as-is, others auto-converted)',
                 width: 'Width', height: 'Height', lockRatio: 'Lock Ratio',
                 resetSize: 'Reset to Original', powerOf2: 'Power of 2',
                 resizeHint: 'Leave empty or 0 to keep original size',
@@ -1480,9 +1584,9 @@
                 colorTexAdvParams: 'colorTex Advanced Parameters (usually no change needed)',
                 segmentsLabel: 'Segments', segmentsNote: '(preserved on import, editing not supported)', none: 'None',
                 shadowTexture: 'Shadow Texture Image (optional)',
-                uploadShadowAuto: 'Upload Shadow image (auto PNG)',
+                uploadShadowAuto: 'Upload Shadow image (PNG / JPG kept as-is)',
                 shapeTexture: 'Shape Texture Image (optional)',
-                uploadShapeAuto: 'Upload Shape image (auto PNG)',
+                uploadShapeAuto: 'Upload Shape image (PNG / JPG kept as-is)',
                 cancel: 'Cancel', save: 'Save', edit: 'Edit', delete: 'Delete',
                 // 动态文本
                 toastUploadImg: 'Please upload an image file!', toastConvertedPNG: 'Auto-converted to PNG',
@@ -1508,7 +1612,8 @@
                 progressPreparing: 'Preparing…', progressBatchTitle: 'Importing images', progressImportTitle: 'Parsing texture pack', progressExportTitle: 'Generating texture pack',
                 progressProcessing: 'Processing', cancelTask: 'Cancel processing',
                 origDim: 'Original', output: 'Output', size: 'Size', original: 'original',
-                unnamed: 'Unnamed', lockRatioTitle: 'Lock/Unlock aspect ratio'
+                unnamed: 'Unnamed', lockRatioTitle: 'Lock/Unlock aspect ratio',
+                themeToggleTitle: 'Switch light / dark mode'
             }
         };
 
@@ -1532,6 +1637,12 @@
                 const key = el.getAttribute('data-i18n-ph');
                 const text = t(key);
                 if (text && text !== key) el.placeholder = text;
+            });
+            // 更新所有 data-i18n-title 提示
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                const text = t(key);
+                if (text && text !== key) el.title = text;
             });
             // 更新动态内容
             updateTextureList();
@@ -1993,7 +2104,7 @@
                 document.getElementById('adv_borderTop_sizeMode').value = '0';
                 document.getElementById('adv_borderTop_size').value = '0.5';
                 document.getElementById('adv_borderTop_uvSize').value = '0.0';
-                document.getElementById('adv_center_mode').value = '0';
+                document.getElementById('adv_center_mode').value = '1';
                 document.getElementById('adv_center_sizeMode').value = '0';
                 document.getElementById('adv_center_size').value = '0.5';
                 document.getElementById('adv_center_logoHeightPercent').value = '0.5';
@@ -2076,7 +2187,55 @@
             });
         }
 
-        // 将任意图片文件转换为 PNG 格式，并在解码前校验资源限制
+        // ===== SFS 纹理格式兼容 =====
+        // SFS 通过 Unity 的 ImageConversion.LoadImage 解码纹理
+        // （反编译源码：decompiled_cs/TextureUtility.cs -> FromFile -> texture2D.LoadImage(file.ReadBytes())），
+        // 只认 PNG / JPG，且**不看扩展名、只按内容解码**；webp / bmp / gif 会被拒绝，
+        // 游戏里会静默退回 Texture2D.whiteTexture（表现为纯白、发灰、颜色全丢）。
+        // 所以：能识别的格式原样保留（不动画质也不动体积），识别不了才转 PNG。
+        const SFS_NATIVE_MIME = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/jpg': '.jpg' };
+
+        // 返回 SFS 可直接识别的扩展名（'.png' / '.jpg'），识别不了返回 null
+        function sfsNativeExtension(file) {
+            if (file && file.type && SFS_NATIVE_MIME[file.type]) return SFS_NATIVE_MIME[file.type];
+            const match = /\.([a-z0-9]+)$/i.exec((file && file.name) || '');
+            if (!match) return null;
+            const ext = match[1].toLowerCase();
+            if (ext === 'png') return '.png';
+            if (ext === 'jpg' || ext === 'jpeg') return '.jpg';
+            return null;
+        }
+
+        function replaceExtension(name, ext) {
+            return name.replace(/\.[^.]*$/, '') + ext;
+        }
+
+        // 导出时这个纹理该用什么扩展名
+        function outputExtensionFor(file) {
+            return sfsNativeExtension(file) || '.png';
+        }
+
+        // 纹理文件：SFS 认得就原样保留，认不得才转 PNG
+        async function toSfsTextureFile(file, task = null) {
+            if (!isImageFile(file)) throw new Error(t('toastUploadImg'));
+            const ext = sfsNativeExtension(file);
+            const stem = sanitizeFileStem(file.name.replace(/\.[^.]+$/, ''), 'texture');
+            if (ext) {
+                const name = stem + ext;
+                return file.name === name ? file : new File([file], name, { type: ext === '.png' ? 'image/png' : 'image/jpeg' });
+            }
+            const { image } = await loadImageFromFile(file, task);
+            assertTaskActive(task);
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            canvas.getContext('2d').drawImage(image, 0, 0);
+            const blob = await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('转换失败')), 'image/png'));
+            assertTaskActive(task);
+            return new File([blob], stem + '.png', { type: 'image/png' });
+        }
+
+        // 强制转 PNG：只给「文件名必须是 .png」的场景用（如包图标 icon.png）
         async function convertToPNG(file, task = null) {
             if (!isImageFile(file)) throw new Error(t('toastUploadImg'));
             const { image } = await loadImageFromFile(file, task);
@@ -2103,7 +2262,7 @@
                 return;
             }
             showToast(t('toastConverting'), 'info');
-            convertToPNG(file).then(pngFile => {
+            toSfsTextureFile(file).then(pngFile => {
                 tempFiles[type] = pngFile;
                 const labelMap = { color: 'texColorLabel', shadow: 'texShadowLabel', shape: 'texShapeLabel' };
                 const lbl = document.getElementById(labelMap[type]);
@@ -2112,7 +2271,7 @@
                 if (type === 'color') {
                     loadImageForPreview(pngFile, 0, 0);
                 }
-                if (!file.name.toLowerCase().endsWith('.png')) {
+                if (!sfsNativeExtension(file)) {
                     showToast(t('toastConvertedPNG'), 'success');
                 }
             }).catch(err => {
@@ -2120,6 +2279,7 @@
             });
             input.value = '';
         }
+
 
         async function loadImageForPreview(file, presetW, presetH) {
             try {
@@ -2271,13 +2431,16 @@
                         ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, 0, 0, targetW, targetH);
 
+                        // 缩放必须重编码：JPG 源仍输出 JPG（省体积），其余按 PNG
+                        const keepJpeg = sfsNativeExtension(file) === '.jpg';
+                        const outMime = keepJpeg ? 'image/jpeg' : 'image/png';
                         canvas.toBlob(function(blob) {
                             if (blob) {
-                                resolve(new File([blob], file.name, { type: 'image/png' }));
+                                resolve(new File([blob], replaceExtension(file.name, keepJpeg ? '.jpg' : '.png'), { type: outMime }));
                             } else {
                                 resolve(file);
                             }
-                        }, 'image/png');
+                        }, outMime, keepJpeg ? 0.92 : undefined);
                     };
                     img.src = e.target.result;
                 };
@@ -2326,7 +2489,7 @@
                     size: parseFloat(document.getElementById('adv_borderTop_size').value) || 0.5
                 },
                 center: {
-                    mode: parseInt(document.getElementById('adv_center_mode').value) || 0,
+                    mode: parseInt(document.getElementById('adv_center_mode').value) || 1,
                     sizeMode: parseInt(document.getElementById('adv_center_sizeMode').value) || 0,
                     size: parseFloat(document.getElementById('adv_center_size').value) || 0.5,
                     logoHeightPercent: parseFloat(document.getElementById('adv_center_logoHeightPercent').value) || 0.5,
@@ -2411,8 +2574,8 @@
                     const file = imageFiles[index];
                     updateTaskProgress(task, index, imageFiles.length, t('progressProcessing') + ' ' + (index + 1) + '/' + imageFiles.length + '：' + file.name);
                     try {
-                        const pngFile = await convertToPNG(file, task);
-                        const name = makeAvailableTextureName(pngFile.name.replace(/\.png$/i, ''), additions.map(item => item.name));
+                        const pngFile = await toSfsTextureFile(file, task);
+                        const name = makeAvailableTextureName(pngFile.name.replace(/\.[^.]+$/i, ''), additions.map(item => item.name));
                         additions.push({
                             name,
                             displayName: name + ' unhidden',
@@ -2661,12 +2824,12 @@
                         || textureImages.find(entry => getPathBaseName(entry.path).toLowerCase().replace(/\.[^.]+$/, '') === expected)
                         || null;
                 };
-                const archiveImageToPNG = async entry => {
+                const archiveImageToSfsTexture = async entry => {
                     assertTaskActive(task);
                     if (!entry) return null;
                     const imageFile = await entry.getFile();
                     assertTaskActive(task);
-                    return convertToPNG(imageFile, task);
+                    return toSfsTextureFile(imageFile, task);
                 };
                 const readOptionalMap = async (folderPath, relativePath, fallbackName, textureStem) => {
                     if (!folderPath) return null;
@@ -2676,7 +2839,7 @@
                         const config = await readArchiveJson(configEntry);
                         const requested = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : fallbackName + '.png';
                         const found = findImageEntry(requested, configEntry.path) || findByTextureStem(textureStem, configEntry.path);
-                        return found ? await archiveImageToPNG(found) : null;
+                        return found ? await archiveImageToSfsTexture(found) : null;
                     } catch (error) {
                         if (isTaskCancelledError(error)) throw error;
                         return null;
@@ -2702,7 +2865,7 @@
                     const requestedColorName = config && config.colorTex && Array.isArray(config.colorTex.textures) && config.colorTex.textures[0] ? config.colorTex.textures[0].texture : rawFileName + '.png';
                     const colorEntry = findImageEntry(requestedColorName, txtPath) || findByTextureStem(rawFileName, txtPath);
                     if (!colorEntry) { await yieldToUI(); continue; }
-                    const colorFile = await archiveImageToPNG(colorEntry);
+                    const colorFile = await archiveImageToSfsTexture(colorEntry);
                     const relativePath = layout.colorTexturesPath && txtPath.toLowerCase().startsWith(layout.colorTexturesPath.toLowerCase()) ? txtPath.substring(layout.colorTexturesPath.length) : getPathBaseName(txtPath);
                     const shadowFile = await readOptionalMap(layout.shadowTexturesPath, relativePath, rawFileName, rawFileName);
                     const shapeFile = await readOptionalMap(layout.shapeTexturesPath, relativePath, rawFileName, rawFileName);
@@ -3032,13 +3195,14 @@
                     const resizeH = Number(tex.resizeH) || 0;
                     const colorFileToUse = await resizeImageFile(tex.colorFile, resizeW, resizeH);
                     assertTaskActive(task);
-                    const colorOutputName = tex.name + '.png';
-                    const colorOutputFile = new File([colorFileToUse], colorOutputName, { type: 'image/png' });
+                    const colorExt = outputExtensionFor(colorFileToUse);
+                    const colorOutputName = tex.name + colorExt;
+                    const colorOutputFile = new File([colorFileToUse], colorOutputName, { type: colorExt === '.jpg' ? 'image/jpeg' : 'image/png' });
                     const defaultParams = {
                         ideal: 0.0,
                         border_Bottom: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
                         border_Top: { uvSize: 0.0, sizeMode: 0, size: 0.5 },
-                        center: { mode: 0, sizeMode: 0, size: 0.5, logoHeightPercent: 0.5, scaleLogoToFit: false },
+                        center: { mode: 1, sizeMode: 0, size: 0.5, logoHeightPercent: 0.5, scaleLogoToFit: false },
                         fixedWidth: false, fixedWidthValue: 1.0,
                         flipToLight_X: false, flipToLight_Y: false,
                         metalTexture: false, pack_Redstone_Atlas: false, multiple: false
@@ -3067,18 +3231,18 @@
                     colorFolder.file(tex.name + '.txt', JSON.stringify(baseConfig, null, 2));
                     texturesFolder.file(colorOutputName, colorOutputFile);
                     if (tex.shadowFile) {
-                        const shadowOutputName = tex.name + '_shadow.png';
+                        const shadowOutputName = tex.name + '_shadow' + outputExtensionFor(tex.shadowFile);
                         const shadowConfig = JSON.parse(JSON.stringify(baseConfig));
                         shadowConfig.colorTex.textures[0].texture = shadowOutputName;
                         shadowFolder.file(tex.name + '.txt', JSON.stringify(shadowConfig, null, 2));
-                        texturesFolder.file(shadowOutputName, new File([tex.shadowFile], shadowOutputName, { type: 'image/png' }));
+                        texturesFolder.file(shadowOutputName, new File([tex.shadowFile], shadowOutputName, { type: outputExtensionFor(tex.shadowFile) === '.jpg' ? 'image/jpeg' : 'image/png' }));
                     }
                     if (tex.shapeFile) {
-                        const shapeOutputName = tex.name + '_shape.png';
+                        const shapeOutputName = tex.name + '_shape' + outputExtensionFor(tex.shapeFile);
                         const shapeConfig = JSON.parse(JSON.stringify(baseConfig));
                         shapeConfig.colorTex.textures[0].texture = shapeOutputName;
                         shapeFolder.file(tex.name + '.txt', JSON.stringify(shapeConfig, null, 2));
-                        texturesFolder.file(shapeOutputName, new File([tex.shapeFile], shapeOutputName, { type: 'image/png' }));
+                        texturesFolder.file(shapeOutputName, new File([tex.shapeFile], shapeOutputName, { type: outputExtensionFor(tex.shapeFile) === '.jpg' ? 'image/jpeg' : 'image/png' }));
                     }
                     await yieldToUI();
                 }
@@ -3096,6 +3260,34 @@
                 finishTask(task);
             }
         }
+
+        // ================= 主题：白天 / 夜间 =================
+        const THEME_STORAGE_KEY = 'sfs_tpm_theme';
+
+        function applyTheme(theme) {
+            const light = theme === 'light';
+            document.body.classList.toggle('light-mode', light);
+            const sun = document.getElementById('themeIconSun');
+            const moon = document.getElementById('themeIconMoon');
+            if (sun) sun.hidden = light;
+            if (moon) moon.hidden = !light;
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', light ? '#f2f4f7' : '#000000');
+        }
+
+        function toggleTheme() {
+            const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+            applyTheme(next);
+            try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (error) { /* 隐私模式下忽略 */ }
+        }
+
+        function initTheme() {
+            let saved = null;
+            try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (error) { saved = null; }
+            applyTheme(saved === 'light' ? 'light' : 'dark');
+        }
+
+        initTheme();
     </script>
 
 </body></html>
